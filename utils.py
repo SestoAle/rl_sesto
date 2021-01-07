@@ -1,6 +1,19 @@
 import numpy as np
 import json
 
+def product(xs, empty=1):
+    result = None
+    for x in xs:
+        if result is None:
+            result = x
+        else:
+            result *= x
+
+    if result is None:
+        result = empty
+
+    return result
+
 class RunningStat(object):
         def __init__(self, shape=()):
             self._n = 0

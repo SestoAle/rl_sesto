@@ -2,7 +2,8 @@ import tensorflow as tf
 import random
 import numpy as np
 from math import sqrt
-from tensorforce import util
+import utils
+
 import os
 
 eps = 1e-5
@@ -136,7 +137,7 @@ class PPO:
     def embedding(self, input, indices, size, name='embs'):
         with tf.compat.v1.variable_scope(name):
             shape = (indices, size)
-            stddev = min(0.1, sqrt(2.0 / (util.product(xs=shape[:-1]) + shape[-1])))
+            stddev = min(0.1, sqrt(2.0 / (utils.product(xs=shape[:-1]) + shape[-1])))
             initializer = tf.random.normal(shape=shape, stddev=stddev, dtype=tf.float32)
             W = tf.Variable(
                 initial_value=initializer, trainable=True, validate_shape=True, name='W',
