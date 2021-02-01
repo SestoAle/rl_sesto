@@ -20,8 +20,8 @@ parser.add_argument('-mn', '--model-name', help="The name of the model", default
 parser.add_argument('-gn', '--game-name', help="The name of the game", default='envs/DeepCrawl-Procedural-4')
 parser.add_argument('-wk', '--work-id', help="Work id for parallel training", default=0)
 parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=3000)
-parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=5)
-parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=100)
+parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=100)
+parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=50)
 parser.add_argument('-se', '--sampled-env', help="IRL", default=20)
 parser.add_argument('-rc', '--recurrent', dest='recurrent', action='store_true')
 
@@ -35,7 +35,7 @@ parser.add_argument('-fr', '--fixed-reward-model', help="Whether to use a traine
 
 parser.set_defaults(use_reward_model=False)
 parser.set_defaults(fixed_reward_model=False)
-parser.set_defaults(recurrent=False)
+parser.set_defaults(recurrent=True)
 
 args = parser.parse_args()
 
@@ -85,8 +85,10 @@ if __name__ == "__main__":
 
     # Total episode of training
     total_episode = 1e10
+    # Units of training (episodes or timesteps)
+    frequency_mode = 'episodes'
     # Frequency of training (in episode)
-    frequency = 5
+    frequency = 10
     # Memory of the agent (in episode)
     memory = 10
 
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     # Create runner
     runner = Runner(agent=agent, frequency=frequency, env=env, save_frequency=save_frequency,
                     logging=logging, total_episode=total_episode, curriculum=curriculum,
-
+                    frequency_mode=frequency_mode,
                     reward_model=reward_model, reward_frequency=reward_frequency, dems_name=dems_name,
                     fixed_reward_model=fixed_reward_model)
     try:

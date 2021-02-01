@@ -9,12 +9,12 @@ import os
 
 eps = 1e-5
 
-# Discrete Soft Actor-Critic
+# Actor-Critic PPO. The Actor is independent by the Critic.
 class SAC:
     # PPO agent
-    def __init__(self, sess, lr=5e-6, batch_size=256, p_num_itr=1, action_size=3,
+    def __init__(self, sess, lr=5e-6, batch_size=256, p_num_itr=4, action_size=3,
                  discount=0.99, name='sac', memory=10, norm_reward=False,
-                 alpha=0.2, tau=0.005,
+                 alpha=0.01, tau=0.005,
                  model_name='agent',
 
                  # LSTM
@@ -445,11 +445,12 @@ class SAC:
         self.buffer['rewards'].append(reward)
         self.buffer['terminals'].append(terminals)
 
+
     # Save the entire model
     def save_model(self, name=None, folder='saved'):
         self.saver.save(self.sess, '{}/{}'.format(folder, name))
 
-        if True:
+        if False:
             graph_def = self.sess.graph.as_graph_def()
 
             # freeze_graph clear_devices option
