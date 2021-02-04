@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import tensorflow as tf
 
 def product(xs, empty=1):
     result = None
@@ -123,3 +124,11 @@ class NumpyEncoder(json.JSONEncoder):
         elif isinstance(obj,(np.ndarray,)): #### This is the fix
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
+
+def shape_list(x):
+    '''
+        deal with dynamic shape in tensorflow cleanly
+    '''
+    ps = x.get_shape().as_list()
+    ts = tf.shape(x)
+    return [ts[i] if ps[i] is None else ps[i] for i in range(len(ps))]

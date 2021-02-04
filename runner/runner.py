@@ -123,7 +123,7 @@ class Runner:
                 if not self.recurrent:
                     action, logprob, probs = self.agent.eval([state])
                 else:
-                    action, logprob, probs, internal = self.agent.eval_recurrent([state], internal)
+                    action, logprob, probs, internal_n = self.agent.eval_recurrent([state], internal)
 
                 if self.random_actions is not None and self.total_step < self.random_actions:
                     action = [np.random.randint(self.agent.action_size)]
@@ -154,7 +154,17 @@ class Runner:
                 episode_reward += reward
 
                 # Update PPO memory
-                self.agent.add_to_buffer(state, state_n, action, reward, logprob, done)
+                if not self.recurrent:
+                    self.agent.add_to_buffer(state, state_n, action, reward, logprob, done)
+                else:
+                    try:
+                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
+                                                 internal.c[0], internal.h[0])
+                    except Exception as e:
+                        zero_state = np.reshape(internal[0], [-1,])
+                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
+                                                 zero_state, zero_state)
+                    internal = internal_n
                 state = state_n
 
                 step += 1
