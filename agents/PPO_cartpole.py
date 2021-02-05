@@ -82,7 +82,7 @@ class PPO:
                                                                  self.recurrent_train_length, feature])
                     # Define the RNN cell
                     self.rnn_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(num_units=self.recurrent_size,
-                                                                           state_is_tuple=True, activation=tf.nn.relu)
+                                                                           state_is_tuple=True, activation=tf.nn.tanh)
                     # Define state_in for the cell
                     self.state_in = self.rnn_cell.zero_state(bs, tf.float32)
 
