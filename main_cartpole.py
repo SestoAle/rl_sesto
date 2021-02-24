@@ -38,7 +38,7 @@ parser.add_argument('-fr', '--fixed-reward-model', help="Whether to use a traine
 parser.set_defaults(use_reward_model=False)
 parser.set_defaults(fixed_reward_model=False)
 # TODO: use LSTM as default
-parser.set_defaults(recurrent=True)
+parser.set_defaults(recurrent=False)
 
 args = parser.parse_args()
 
@@ -56,7 +56,7 @@ class GridWorld:
             self.env.render('human')
         state = self.env.reset()
         state = np.reshape(state, [4])
-        state *= [1.0, 0., 1., 0.]
+        #state *= [1.0, 0., 1., 0.]
         return dict(global_in=state)
 
     def execute(self, actions):
@@ -64,7 +64,7 @@ class GridWorld:
             self.env.render('human')
         state, reward, done, _ = self.env.step(actions)
         state = np.reshape(state, [4])
-        state *= [1.0, 0., 1., 0.]
+        #state *= [1.0, 0., 1., 0.]
         state = dict(global_in=state)
         return state, done, reward
 

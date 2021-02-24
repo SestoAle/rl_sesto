@@ -19,7 +19,7 @@ class PPO:
                  model_name='agent',
 
                  # LSTM
-                 recurrent=True, recurrent_length=8,
+                 recurrent=False, recurrent_length=8,
 
                  **kwargs):
 
