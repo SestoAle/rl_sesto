@@ -1,2 +1,2 @@
-# Sesto_PPO
-My implementation of PPO
+# Sesto_RL
+My implementation of RL
