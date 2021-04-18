@@ -11,7 +11,7 @@ eps = 1e-5
 
 # Actor-Critic PPO. The Actor is independent by the Critic.
 class SAC:
-    # PPO agent
+    # SAC agent
     def __init__(self, sess, lr=5e-6, batch_size=256, p_num_itr=4, action_size=3,
                  discount=0.99, name='sac', memory=10, norm_reward=False,
                  alpha=0.01, tau=0.005,

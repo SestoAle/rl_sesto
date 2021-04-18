@@ -132,3 +132,55 @@ def shape_list(x):
     ps = x.get_shape().as_list()
     ts = tf.shape(x)
     return [ts[i] if ps[i] is None else ps[i] for i in range(len(ps))]
+
+def stable_masked_softmax(logits, mask):
+
+    #  Subtract a big number from the masked logits so they don't interfere with computing the max value
+    if mask is not None:
+        mask = tf.expand_dims(mask, 2)
+        logits -= (1.0 - mask) * 1e10
+
+    #  Subtract the max logit from everything so we don't overflow
+    logits -= tf.reduce_max(logits, axis=-1, keepdims=True)
+    unnormalized_p = tf.exp(logits)
+
+    #  Mask the unnormalized probibilities and then normalize and remask
+    if mask is not None:
+        unnormalized_p *= mask
+    normalized_p = unnormalized_p / (tf.reduce_sum(unnormalized_p, axis=-1, keepdims=True) + 1e-10)
+    if mask is not None:
+        normalized_p *= mask
+    return normalized_p
+
+def entity_avg_pooling_masked(x, mask):
+    '''
+        Masks and pools x along the second to last dimension. Arguments have dimensions:
+            x:    batch x time x n_entities x n_features
+            mask: batch x time x n_entities
+    '''
+    mask = tf.expand_dims(mask, -1)
+    masked = x * mask
+    summed = tf.reduce_sum(masked, -2)
+    denom = tf.reduce_sum(mask, -2) + 1e-5
+    return summed / denom
+
+def entity_max_pooling_masked(x, mask):
+    '''
+        Masks and pools x along the second to last dimension. Arguments have dimensions:
+            x:    batch x time x n_entities x n_features
+            mask: batch x time x n_entities
+    '''
+    mask = tf.expand_dims(mask, -1)
+    has_unmasked_entities = tf.sign(tf.reduce_sum(mask, axis=-2, keepdims=True))
+    offset = (mask - 1) * 1e9
+    masked = (x + offset) * has_unmasked_entities
+    return tf.reduce_max(masked, -2)
+
+# Boltzmann transformation to probability distribution
+def boltzmann(probs, temperature = 1.):
+    sum = np.sum(np.power(probs, 1/temperature))
+    new_probs = []
+    for p in probs:
+        new_probs.append(np.power(p, 1/temperature) / sum)
+
+    return np.asarray(new_probs)

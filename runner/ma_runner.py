@@ -5,8 +5,8 @@ from utils import NumpyEncoder
 import time
 
 class Runner:
-    def __init__(self, agent, frequency, env, save_frequency=3000, logging=100, total_episode=1e10, curriculum=None,
-                 frequency_mode='episodes', random_actions=None, curriculum_mode='steps',
+    def __init__(self, agents, frequency, env, save_frequency=3000, logging=100, total_episode=1e10, curriculum=None,
+                 frequency_mode='episodes', random_actions=None,
                  # IRL
                  reward_model=None, fixed_reward_model=False, dems_name='', reward_frequency=30,
                  # Adversarial Play
@@ -14,7 +14,7 @@ class Runner:
                  **kwargs):
 
         # Runner objects and parameters
-        self.agent = agent
+        self.agents = agents
         self.curriculum = curriculum
         self.total_episode = total_episode
         self.frequency = frequency
@@ -23,10 +23,6 @@ class Runner:
         self.logging = logging
         self.save_frequency = save_frequency
         self.env = env
-        self.curriculum_mode = curriculum_mode
-
-        # Recurrent
-        self.recurrent = self.agent.recurrent
 
         # Objects and parameters for IRL
         self.reward_model = reward_model
@@ -85,14 +81,15 @@ class Runner:
         self.current_curriculum_step = 0
 
         # If a saved model with the model_name already exists, load it (and the history attached to it)
-        if os.path.exists('{}/{}.meta'.format('saved', agent.model_name)):
+        if os.path.exists('{}/{}.meta'.format('saved', self.agents.model_name)):
             answer = None
             while answer != 'y' and answer != 'n':
                 answer = input("There's already an agent saved with name {}, "
-                               "do you want to continue training? [y/n] ".format(agent.model_name))
+                               "do you want to continue training? [y/n] ".format(self.agents.model_name))
 
             if answer == 'y':
-                self.history = self.load_model(agent.model_name, agent)
+                self.history = self.load_model(self.agents.model_name, self.agents)
+
                 self.ep = len(self.history['episode_timesteps'])
                 self.total_step = np.sum(self.history['episode_timesteps'])
 
@@ -107,7 +104,7 @@ class Runner:
             step = 0
 
             # Set actual curriculum
-            config = self.set_curriculum(self.curriculum, self.history, self.curriculum_mode)
+            config = self.set_curriculum(self.curriculum, np.sum(self.history['episode_timesteps']))
             if self.start_training == 0:
                 print(config)
             self.start_training = 1
@@ -123,29 +120,23 @@ class Runner:
             # Save local entropies
             local_entropies = []
 
-            # If recurrent, initialize hidden state
-            if self.recurrent:
-                internal = (np.zeros([1, self.agent.recurrent_size]), np.zeros([1, self.agent.recurrent_size]))
-                v_internal = (np.zeros([1, self.agent.recurrent_size]), np.zeros([1, self.agent.recurrent_size]))
-
             # Episode loop
             while True:
 
                 # Evaluation - Execute step
-                if not self.recurrent:
-                    action, logprob, probs = self.agent.eval([state])
-                else:
-                    action, logprob, probs, internal_n, v_internal_n = self.agent.eval_recurrent([state], internal, v_internal)
+
+                a_actions, a_logprobs, a_probs = self.agents.eval(state)
 
                 if self.random_actions is not None and self.total_step < self.random_actions:
                     action = [np.random.randint(self.agent.action_size)]
 
-                action = action[0]
                 # Save probabilities for entropy
-                local_entropies.append(self.env.entropy(probs[0]))
+                local_entropies.append(self.env.entropy(a_probs[0][0]))
 
                 # Execute in the environment
-                state_n, done, reward = self.env.execute(action)
+                state_n, done, reward = self.env.execute(a_actions)
+                reward = reward[0]
+                done = done[0]
 
                 # If exists a reward model, use it instead of the env reward
                 if self.reward_model is not None:
@@ -157,35 +148,23 @@ class Runner:
                     else:
                         reward = self.reward_model.eval_discriminator([state], [state_n], [probs[0][action]], [action])
                         self.reward_model.add_to_buffer(state, state_n, action)
+
                 # If step is equal than max timesteps, terminate the episode
                 if step >= self.env._max_episode_timesteps - 1:
                     done = True
-                # Time horizon
-                elif self.frequency_mode == 'timesteps' and (self.total_step + 1) % self.frequency == 0:
-                    done = 2
 
                 # Get the cumulative reward
                 episode_reward += reward
 
                 # Update PPO memory
-                if not self.recurrent:
-                    self.agent.add_to_buffer(state, state_n, action, reward, logprob, done)
-                else:
-                    try:
-                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
-                                                 internal.c[0], internal.h[0], v_internal.c[0], v_internal.h[0])
-                    except Exception as e:
-                        zero_state = np.reshape(internal[0], [-1,])
-                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
-                                                 zero_state, zero_state, zero_state, zero_state)
-                    internal = internal_n
-                    v_internal = v_internal_n
+                self.agents.add_to_buffer(state, state_n, a_actions, reward, a_logprobs, done)
+
                 state = state_n
 
                 step += 1
                 self.total_step += 1
 
-                # If frequency timesteps are passed, update the policy
+                # If frequency timesteos are passed, update the policy
                 if self.frequency_mode == 'timesteps' and \
                         self.total_step > 0 and self.total_step % self.frequency == 0:
                     if self.random_actions is not None:
@@ -195,7 +174,7 @@ class Runner:
                         self.agent.train()
 
                 # If done, end the episode and save statistics
-                if done == 1:
+                if done:
                     self.history['episode_rewards'].append(episode_reward)
                     self.history['episode_timesteps'].append(step)
                     self.history['mean_entropies'].append(np.mean(local_entropies))
@@ -218,7 +197,7 @@ class Runner:
 
             # If frequency episodes are passed, update the policy
             if self.frequency_mode == 'episodes' and self.ep > 0 and self.ep % self.frequency == 0:
-                self.agent.train()
+                self.agents.train()
 
             # If IRL, update the reward model after reward_frequency episode
             if self.reward_model is not None:
@@ -227,7 +206,7 @@ class Runner:
 
             # Save model and statistics
             if self.ep > 0 and self.ep % self.save_frequency == 0:
-                self.save_model(self.history, self.agent.model_name, self.curriculum, self.agent)
+                self.save_model(self.history, self.agents.model_name, self.curriculum, self.agents)
                 if self.reward_model is not None:
                     if not self.fixed_reward_model:
                         self.reward_model.save_model('{}_{}'.format(self.agent.model_name, self.ep))
@@ -259,22 +238,10 @@ class Runner:
         return history
 
     # Update curriculum for DeepCrawl
-    def set_curriculum(self, curriculum, history, mode='steps'):
-
-        total_timesteps = np.sum(history['episode_timesteps'])
-        total_episodes = len(history['episode_timesteps'])
-
+    def set_curriculum(self, curriculum, total_timesteps, mode='steps'):
+        
         if curriculum == None:
             return None
-
-        if mode == 'episodes':
-            lessons = np.cumsum(curriculum['thresholds'])
-            curriculum_step = 0
-
-            for (index, l) in enumerate(lessons):
-
-                if total_episodes > l:
-                    curriculum_step = index + 1
 
         if mode == 'steps':
             lessons = np.cumsum(curriculum['thresholds'])

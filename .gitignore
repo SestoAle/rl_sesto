@@ -127,11 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.idea/*
 .idea/misc.xml
 .idea/modules.xml
 .idea/other.xml
 .idea/Sesto_PPO.iml
 .idea/vcs.xml
 .idea/workspace.xml
-envs/
 .DS_Store
+.idea/ppo_sesto.iml

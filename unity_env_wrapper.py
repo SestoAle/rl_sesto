@@ -14,9 +14,13 @@ class UnityEnvWrapper(Environment):
     def __init__(self, game_name = None, no_graphics = True, seed = None, worker_id=0, size_global = 8, size_two = 5,
                  with_local = True, size_three = 3, with_stats=True, size_stats = 1,
                  with_previous=True, manual_input = False, config = None, curriculum = None, verbose = False,
-                 agent_separate = False, agent_stats = 6,
+                 agent_separate = False, agent_stats = 6, action_size = 19,
                  _max_episode_timesteps = 100,
-                 with_class=False, with_hp = False, size_class = 3, use_double_agent = False, double_agent = None, reward_model = None):
+                 with_class=False, with_hp = False, size_class = 3,
+                 # Double agent
+                 use_double_agent=False, double_agent = None, play_with_random=0.33,
+                 # Reward model
+                 reward_model = None):
 
         self.probabilities = []
 
@@ -26,6 +30,7 @@ class UnityEnvWrapper(Environment):
         self.size_three = size_three
         self.with_stats = with_stats
         self.size_stats = size_stats
+        self.action_size = action_size
 
         self.manual_input = manual_input
         self.with_previous = with_previous
@@ -53,11 +58,15 @@ class UnityEnvWrapper(Environment):
         self.one_hot = True
         self.reward_model = reward_model
         self._max_episode_timesteps = _max_episode_timesteps
+
+        # Adversarial play
         if(self.use_double_agent):
             self.double_brain = self.unity_env.brain_names[1]
             self.double_agent = double_agent
+            self.play_with_random = play_with_random
+
         self.global_timesteps = 0
-        self.double_agent_prob = 0.33
+
 
         self.with_transformer = False
 
@@ -66,7 +75,200 @@ class UnityEnvWrapper(Environment):
     def to_one_hot(self, a, channels):
         return (np.arange(channels) == a[..., None]).astype(float)
 
-    def get_input_observation(self, env_info, action = None):
+    def get_input_observation(self, env_info, action=None, transformer=False):
+        size = self.size_global * self.size_global * self.input_channels
+
+        global_in = env_info.vector_observations[0][:size]
+        global_in = np.reshape(global_in, (self.size_global, self.size_global, self.input_channels))
+        if self.one_hot:
+            global_in_one_hot = self.to_one_hot(global_in[:,:,0], 7)
+            for i in range(1, self.input_channels):
+                global_in_one_hot = np.append(global_in_one_hot, self.to_one_hot(global_in[:,:,i], 9), axis = 2)
+
+        if self.with_local:
+            size_local = self.size_two * self.size_two * self.input_channels
+            local_in = env_info.vector_observations[0][size:(size + size_local)]
+            local_in = np.reshape(local_in, (self.size_two, self.size_two, self.input_channels))
+            if self.one_hot:
+                local_in_one_hot = self.to_one_hot(local_in[:, :, 0], 7)
+                for i in range(1, self.input_channels):
+                    local_in_one_hot = np.append(local_in_one_hot, self.to_one_hot(local_in[:, :, i], 9), axis=2)
+
+            size_local_two = self.size_three * self.size_three * self.input_channels
+            local_in_two = env_info.vector_observations[0][(size + size_local):(
+                    size + size_local + size_local_two)]
+            local_in_two = np.reshape(local_in_two, (self.size_three, self.size_three, self.input_channels))
+            if self.one_hot:
+                local_in_two_one_hot = self.to_one_hot(local_in_two[:, :, 0], 7)
+                for i in range(1, self.input_channels):
+                    local_in_two_one_hot = np.append(local_in_two_one_hot, self.to_one_hot(local_in_two[:, :, i], 9), axis=2)
+
+        if self.with_local and self.with_stats:
+            stats = env_info.vector_observations[0][
+                    (size + size_local + size_local_two):
+                    (size + size_local + size_local_two + self.size_stats)]
+
+        if self.with_local and self.with_stats and self.with_hp:
+            hp = env_info.vector_observations[0][
+                 (size + (self.size_two * self.size_two) + (self.size_three * self.size_three)):
+                 (size + (self.size_two * self.size_two) + (self.size_three * self.size_three) + 4)]
+            stats = env_info.vector_observations[0][
+                    (size + (self.size_two * self.size_two) + (self.size_three * self.size_three) + 4):
+                    (size + (self.size_two * self.size_two) + (
+                                self.size_three * self.size_three) + self.size_stats + 4)]
+            self.size_stats += 4
+
+        if self.with_local and self.with_stats and self.with_class:
+            agent_class = env_info.vector_observations[0][
+                          (size + (self.size_two * self.size_two) + (
+                                      self.size_three * self.size_three) + self.size_stats):
+                          (size + (self.size_two * self.size_two) + (
+                                      self.size_three * self.size_three) + self.size_stats + self.size_class)]
+
+            enemy_class = env_info.vector_observations[0][
+                          (size + (self.size_two * self.size_two) + (
+                                      self.size_three * self.size_three) + self.size_stats + self.size_class):
+                          (size + (self.size_two * self.size_two) + (
+                                      self.size_three * self.size_three) + self.size_stats + self.size_class * 2)]
+
+        observation = {
+            'global_in': global_in,
+            'local_in': local_in
+        }
+
+        if self.with_local:
+            observation = {
+                'global_in': global_in,
+                'local_in': local_in,
+                'local_in_two': local_in_two
+            }
+        if self.with_local and self.with_stats:
+            observation = {
+                'global_in': global_in,
+                'local_in': local_in,
+                'local_in_two': local_in_two,
+                'stats': stats
+            }
+
+        if self.with_local and self.with_stats and self.with_previous:
+            action_vector = np.zeros(19)
+            if action != None:
+                action_vector[action] = 1
+
+            observation = {
+                # Global View
+                'global_in': global_in_one_hot,
+                # 'attr_global_1': global_in[:, :, 1],
+                # 'attr_global_2': global_in[:, :, 2],
+                # 'attr_global_3': global_in[:, :, 3],
+                # 'attr_global_4': global_in[:, :, 4],
+                # 'attr_global_5': global_in[:, :, 5],
+                #'global_in_attributes': global_in[:, :, 1:]/5.,
+
+                # Local View
+                'local_in': local_in_one_hot,
+                # 'attr_local_1': local_in[:, :, 1],
+                # 'attr_local_2': local_in[:, :, 2],
+                # 'attr_local_3': local_in[:, :, 3],
+                # 'attr_local_4': local_in[:, :, 4],
+                # 'attr_local_5': local_in[:, :, 5],
+                #'local_in_attributes': local_in[:, :, 1:]/5.,
+
+                # Local Two View
+                'local_in_two': local_in_two_one_hot,
+                # 'attr_local_two_1': local_in_two[:, :, 1],
+                # 'attr_local_two_2': local_in_two[:, :, 2],
+                # 'attr_local_two_3': local_in_two[:, :, 3],
+                # 'attr_local_two_4': local_in_two[:, :, 4],
+                # 'attr_local_two_5': local_in_two[:, :, 5],
+                #'local_in_two_attributes': local_in_two[:, :, 1:],
+
+                # Stats
+                'agent_stats': stats[:16],
+                'target_stats': stats[16:],
+                'prev_action': action_vector
+            }
+
+            if transformer:
+                x_map = np.asarray([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])
+
+                y_map = np.asarray([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+                                     [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+                                     [4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+                                     [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+                                     [6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+                                     [7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+                                     [8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+                                     [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]])
+
+
+                x_map = np.reshape(x_map, [10, 10, 1])
+                y_map = np.reshape(y_map, [10, 10, 1])
+
+                x_map = 2 * (x_map - 0) / (9 - 0) - 1
+                y_map = 2 * (y_map - 0) / (9 - 0) - 1
+
+                x_local_two_map = np.asarray([[0, 1, 2],
+                                              [0, 1, 2],
+                                              [0, 1, 2]])
+
+                y_local_two_map = np.asarray([[0, 0, 0],
+                                              [1, 1, 1],
+                                              [2, 2, 2]])
+
+
+                x_local_two_map = np.reshape(x_local_two_map, [3, 3, 1])
+                y_local_two_map = np.reshape(y_local_two_map, [3, 3, 1])
+
+                x_local_two_map = 2 * (x_local_two_map - 0) / (3 - 0) - 1
+                y_local_two_map = 2 * (y_local_two_map - 0) / (3 - 0) - 1
+
+                observation['global_positions'] = np.concatenate([x_map, y_map], axis=2)
+                observation['local_two_positions'] = np.concatenate([x_local_two_map, y_local_two_map], axis=2)
+
+        if self.with_local and self.with_stats and self.with_previous and self.with_class:
+            action_vector = np.zeros(17)
+            if action != None:
+                action_vector[action] = 1
+
+            observation = {
+                'global_in': global_in,
+                'local_in': local_in,
+                'local_in_two': local_in_two,
+                'stats': stats,
+                'agent_class': agent_class,
+                'enemy_class': enemy_class,
+                'action': action_vector
+            }
+
+        if self.with_local and self.with_stats and self.with_previous and self.with_hp:
+            action_vector = np.zeros(17)
+            if action != None:
+                action_vector[action] = 1
+
+            observation = {
+                'global_in': global_in,
+                'local_in': local_in,
+                'local_in_two': local_in_two,
+                'hp': hp,
+                'stats': stats,
+                'prev_action': action_vector
+            }
+
+        return observation
+
+    def get_input_observation_adapter(self, env_info, action = None):
         size = self.size_global * self.size_global * self.input_channels
 
         global_in = env_info.vector_observations[0][:size]
@@ -231,7 +433,8 @@ class UnityEnvWrapper(Environment):
         except Exception as e:
             pass
 
-    def execute(self, actions):
+
+    def execute(self, actions, raw_obs=False):
 
         if self.manual_input:
             input_action = input('...')
@@ -247,10 +450,10 @@ class UnityEnvWrapper(Environment):
 
 
         env_info = None
-        signal.alarm(0)
+        #signal.alarm(0)
         while env_info == None:
-            signal.signal(signal.SIGALRM, self.handler)
-            signal.alarm(3000)
+            #signal.signal(signal.SIGALRM, self.handler)
+            #signal.alarm(300000)
             try:
                 if self.use_double_agent:
                     info = self.unity_env.step({self.default_brain : [actions], self.double_brain : []})
@@ -268,10 +471,10 @@ class UnityEnvWrapper(Environment):
             while len(env_info.vector_observations) <= 0:
                 double_info = info[self.double_brain]
                 obs = self.get_input_observation(double_info)
-                if np.random.rand() > 0.33:
-                    act = self.double_agent.act(states=obs, deterministic=True, independent=True)
+                if np.random.rand() > self.play_with_random:
+                    act = self.double_agent.eval([obs])[0]
                 else:
-                    act = np.random.randint(0, 17)
+                    act = np.random.randint(0, self.action_size)
                 info = self.unity_env.step({self.default_brain: [], self.double_brain: [act]})
                 env_info = info[self.default_brain]
 
@@ -289,7 +492,10 @@ class UnityEnvWrapper(Environment):
         if self.verbose:
             self.print_observation(observation, reward=reward, actions=actions)
 
-        return [observation, done, reward]
+        if not raw_obs:
+            return [observation, done, reward]
+        else:
+            return [env_info, done, reward]
 
     def command_to_action(self, command):
 
@@ -313,7 +519,6 @@ class UnityEnvWrapper(Environment):
             "t": 16,
             "f": 17,
             "r": 18
-
         }
 
         return switcher.get(command, 99)
@@ -325,15 +530,15 @@ class UnityEnvWrapper(Environment):
         print("Timeout!")
         raise Exception("end of time")
 
-    def reset(self):
+    def reset(self, raw_obs=False):
 
         self.count = 0
 
         env_info = None
 
         while env_info == None:
-            signal.signal(signal.SIGALRM, self.handler)
-            signal.alarm(60)
+            #signal.signal(signal.SIGALRM, self.handler)
+            #signal.alarm(60)
             try:
                 logging.getLogger("mlagents.envs").setLevel(logging.WARNING)
                 env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
@@ -353,7 +558,10 @@ class UnityEnvWrapper(Environment):
         if self.verbose:
             self.print_observation(observation)
 
-        return observation
+        if not raw_obs:
+            return observation
+        else:
+            return env_info
 
     def close(self):
         self.unity_env.close()

@@ -3,44 +3,36 @@ import numpy as np
 import json
 from utils import NumpyEncoder
 import time
+from tensorforce.execution import Runner
 
-class Runner:
+
+class HRunner:
+
     def __init__(self, agent, frequency, env, save_frequency=3000, logging=100, total_episode=1e10, curriculum=None,
-                 frequency_mode='episodes', random_actions=None, curriculum_mode='steps',
+                 frequency_mode='episodes', random_actions=None,
                  # IRL
                  reward_model=None, fixed_reward_model=False, dems_name='', reward_frequency=30,
-                 # Adversarial Play
-                 adversarial_play=False, double_agent=None,
                  **kwargs):
 
         # Runner objects and parameters
         self.agent = agent
         self.curriculum = curriculum
         self.total_episode = total_episode
-        self.frequency = frequency
+        self.frequency = 1
         self.frequency_mode = frequency_mode
         self.random_actions = random_actions
         self.logging = logging
         self.save_frequency = save_frequency
         self.env = env
-        self.curriculum_mode = curriculum_mode
 
         # Recurrent
-        self.recurrent = self.agent.recurrent
+        self.recurrent = False
 
         # Objects and parameters for IRL
         self.reward_model = reward_model
         self.fixed_reward_model = fixed_reward_model
         self.dems_name = dems_name
         self.reward_frequency = reward_frequency
-
-        # Adversarial play
-        self.adversarial_play = adversarial_play
-        self.double_agent = double_agent
-        # If adversarial play, save the first version of the main agent and load it to the double agent
-        if self.adversarial_play:
-            self.agent.save_model(name=self.agent.model_name + '_0', folder='saved/adversarial')
-            self.double_agent.load_model(name=self.agent.model_name + '_0', folder='saved/adversarial')
 
         # Initialize reward model
         if self.reward_model is not None:
@@ -107,7 +99,7 @@ class Runner:
             step = 0
 
             # Set actual curriculum
-            config = self.set_curriculum(self.curriculum, self.history, self.curriculum_mode)
+            config = self.set_curriculum(self.curriculum, np.sum(self.history['episode_timesteps']))
             if self.start_training == 0:
                 print(config)
             self.start_training = 1
@@ -123,19 +115,26 @@ class Runner:
             # Save local entropies
             local_entropies = []
 
-            # If recurrent, initialize hidden state
-            if self.recurrent:
-                internal = (np.zeros([1, self.agent.recurrent_size]), np.zeros([1, self.agent.recurrent_size]))
-                v_internal = (np.zeros([1, self.agent.recurrent_size]), np.zeros([1, self.agent.recurrent_size]))
-
             # Episode loop
             while True:
 
-                # Evaluation - Execute step
-                if not self.recurrent:
-                    action, logprob, probs = self.agent.eval([state])
-                else:
-                    action, logprob, probs, internal_n, v_internal_n = self.agent.eval_recurrent([state], internal, v_internal)
+                # Get the action from the manager if it is manager turn
+                if step % self.agent.manager_timescale == 0:
+                    man_state = state
+                    man_reward = 0
+                    man_action, man_logprob, man_probs= self.agent.eval_manager([man_state])
+                    # # Eval with latent, so first eval the workers
+                    # man_state = np.asarray([])
+                    # for w in self.agent.workers:
+                    #     _, _, _, w_latent = w.eval_with_latent([state])
+                    #     man_state = np.concatenate([man_state, w_latent[0]])
+                    #
+                    # man_state = dict(global_in=man_state)
+                    # man_action, man_logprob, man_probs = self.agent.eval_manager([man_state])
+                    man_action = man_action[0]
+
+                # Evaluation - Execute step of the worker
+                action, logprob, probs = self.agent.eval_worker([state], man_action)
 
                 if self.random_actions is not None and self.total_step < self.random_actions:
                     action = [np.random.randint(self.agent.action_size)]
@@ -146,6 +145,7 @@ class Runner:
 
                 # Execute in the environment
                 state_n, done, reward = self.env.execute(action)
+                man_reward += reward
 
                 # If exists a reward model, use it instead of the env reward
                 if self.reward_model is not None:
@@ -157,33 +157,37 @@ class Runner:
                     else:
                         reward = self.reward_model.eval_discriminator([state], [state_n], [probs[0][action]], [action])
                         self.reward_model.add_to_buffer(state, state_n, action)
+
                 # If step is equal than max timesteps, terminate the episode
                 if step >= self.env._max_episode_timesteps - 1:
                     done = True
-                # Time horizon
-                elif self.frequency_mode == 'timesteps' and (self.total_step + 1) % self.frequency == 0:
-                    done = 2
+
+                # Update worker memory if it is not a continuous manager
+                if not self.agent.continuous_manager:
+                    self.agent.workers[man_action].add_to_buffer(state, state_n, action, reward, logprob, False)
 
                 # Get the cumulative reward
                 episode_reward += reward
 
-                # Update PPO memory
-                if not self.recurrent:
-                    self.agent.add_to_buffer(state, state_n, action, reward, logprob, done)
-                else:
-                    try:
-                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
-                                                 internal.c[0], internal.h[0], v_internal.c[0], v_internal.h[0])
-                    except Exception as e:
-                        zero_state = np.reshape(internal[0], [-1,])
-                        self.agent.add_to_buffer(state, state_n, action, reward, logprob, done,
-                                                 zero_state, zero_state, zero_state, zero_state)
-                    internal = internal_n
-                    v_internal = v_internal_n
                 state = state_n
-
                 step += 1
+
+                # If in the next evaluation step it is the turn of the manager, update its buffer
+                if step % self.agent.manager_timescale == 0 or done:
+                    self.agent.manager.add_to_buffer(man_state, state, man_action, man_reward, man_logprob, False)
+
                 self.total_step += 1
+                # If done, end the episode and save statistics
+                if done:
+                    self.history['episode_rewards'].append(episode_reward)
+                    self.history['episode_timesteps'].append(step)
+                    self.history['mean_entropies'].append(np.mean(local_entropies))
+                    self.history['std_entropies'].append(np.std(local_entropies))
+                    self.history['env_rewards'].append(env_episode_reward)
+
+                    # Add the termination to all workers and manager
+                    self.agent.add_terminations()
+                    break
 
                 # If frequency timesteps are passed, update the policy
                 if self.frequency_mode == 'timesteps' and \
@@ -193,15 +197,6 @@ class Runner:
                             self.agent.train()
                     else:
                         self.agent.train()
-
-                # If done, end the episode and save statistics
-                if done == 1:
-                    self.history['episode_rewards'].append(episode_reward)
-                    self.history['episode_timesteps'].append(step)
-                    self.history['mean_entropies'].append(np.mean(local_entropies))
-                    self.history['std_entropies'].append(np.std(local_entropies))
-                    self.history['env_rewards'].append(env_episode_reward)
-                    break
 
             # Logging information
             if self.ep > 0 and self.ep % self.logging == 0:
@@ -218,7 +213,8 @@ class Runner:
 
             # If frequency episodes are passed, update the policy
             if self.frequency_mode == 'episodes' and self.ep > 0 and self.ep % self.frequency == 0:
-                self.agent.train()
+                # If an episode is pass, check if a worker OR the manager can update
+                self.agent.train(self.ep)
 
             # If IRL, update the reward model after reward_frequency episode
             if self.reward_model is not None:
@@ -259,22 +255,10 @@ class Runner:
         return history
 
     # Update curriculum for DeepCrawl
-    def set_curriculum(self, curriculum, history, mode='steps'):
-
-        total_timesteps = np.sum(history['episode_timesteps'])
-        total_episodes = len(history['episode_timesteps'])
-
+    def set_curriculum(self, curriculum, total_timesteps, mode='steps'):
+        
         if curriculum == None:
             return None
-
-        if mode == 'episodes':
-            lessons = np.cumsum(curriculum['thresholds'])
-            curriculum_step = 0
-
-            for (index, l) in enumerate(lessons):
-
-                if total_episodes > l:
-                    curriculum_step = index + 1
 
         if mode == 'steps':
             lessons = np.cumsum(curriculum['thresholds'])
@@ -291,14 +275,6 @@ class Runner:
 
         for (par, value) in parameters.items():
             config[par] = value[curriculum_step]
-
-        # If Adversarial play
-        if self.adversarial_play:
-            if curriculum_step > self.current_curriculum_step:
-                # Save the current version of the main agent
-                self.agent.save_model(name=self.agent.model_name + '_' + str(curriculum_step), folder='saved/adversarial')
-                # Load the weights of the current version of the main agent to the double agent
-                self.double_agent.load_model(name=self.agent.model_name + '_' + str(curriculum_step), folder='saved/adversarial')
 
         self.current_curriculum_step = curriculum_step
 

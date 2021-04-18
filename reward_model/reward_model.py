@@ -5,7 +5,7 @@ import pickle
 from utils import DynamicRunningStat, LimitedRunningStat, RunningStat
 import random
 from math import sqrt
-from tensorforce import util
+import utils as util
 
 eps = 1e-12
 
