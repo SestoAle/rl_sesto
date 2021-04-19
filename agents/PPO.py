@@ -499,8 +499,29 @@ class PPO:
         state = self.obs_to_state(state)
         feed_dict = self.create_state_feed_dict(state)
 
-        probs = self.sess.run([self.probs], feed_dict=feed_dict)
-        return np.argmax(probs)
+
+        if self.action_type == 'continuous':
+            if self.distrbution_type == 'beta':
+                # Return mean as deterministic action
+                beta, alpha = self.sess.run([self.beta, self.alpha], feed_dict=feed_dict)
+                action = beta / (alpha + beta)
+                action = self.action_min_value + (
+                                self.action_max_value - self.action_min_value) * action
+            else:
+                # Return mean as deterministic action
+                action = self.sess.run([self.mean], feed_dict=feed_dict)
+                action = tf.tanh(action)
+                one = tf.constant(value=1.0, dtype=tf.float32)
+                half = tf.constant(value=0.5, dtype=tf.float32)
+                min_value = tf.constant(value=self.action_min_value, dtype=tf.float32)
+                max_value = tf.constant(value=self.action_max_value, dtype=tf.float32)
+                action = min_value + (max_value - min_value) * half * (action + one)
+
+        else:
+            probs = self.sess.run([self.probs], feed_dict=feed_dict)
+            action = np.argmax(probs)
+
+        return action
 
     # Eval with a given action
     def eval_action(self, states, actions):

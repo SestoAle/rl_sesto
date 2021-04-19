@@ -6,7 +6,7 @@ import time
 
 class Runner:
     def __init__(self, agent, frequency, env, save_frequency=3000, logging=100, total_episode=1e10, curriculum=None,
-                 frequency_mode='episodes', random_actions=None, curriculum_mode='steps',
+                 frequency_mode='episodes', random_actions=None, curriculum_mode='steps', evaluation=False,
                  # IRL
                  reward_model=None, fixed_reward_model=False, dems_name='', reward_frequency=30,
                  # Adversarial Play
@@ -24,6 +24,7 @@ class Runner:
         self.save_frequency = save_frequency
         self.env = env
         self.curriculum_mode = curriculum_mode
+        self.evaluation = evaluation
 
         # Recurrent
         self.recurrent = self.agent.recurrent
@@ -133,7 +134,14 @@ class Runner:
 
                 # Evaluation - Execute step
                 if not self.recurrent:
-                    action, logprob, probs = self.agent.eval([state])
+                    if self.evaluation:
+                        # If evaluating, take the most probable action
+                        action = self.agent.eval_max([state])
+                        probs = [[]]
+                        logprob = 0
+                    else:
+                        action, logprob, probs = self.agent.eval([state])
+
                 else:
                     action, logprob, probs, internal_n, v_internal_n = self.agent.eval_recurrent([state], internal, v_internal)
 
@@ -186,7 +194,7 @@ class Runner:
                 self.total_step += 1
 
                 # If frequency timesteps are passed, update the policy
-                if self.frequency_mode == 'timesteps' and \
+                if not self.evaluation and self.frequency_mode == 'timesteps' and \
                         self.total_step > 0 and self.total_step % self.frequency == 0:
                     if self.random_actions is not None:
                         if self.total_step > self.random_actions:
@@ -217,11 +225,12 @@ class Runner:
                 self.timer(start_time, time.time())
 
             # If frequency episodes are passed, update the policy
-            if self.frequency_mode == 'episodes' and self.ep > 0 and self.ep % self.frequency == 0:
+            if not self.evaluation and self.frequency_mode == 'episodes' and \
+                    self.ep > 0 and self.ep % self.frequency == 0:
                 self.agent.train()
 
             # If IRL, update the reward model after reward_frequency episode
-            if self.reward_model is not None:
+            if not self.evaluation and self.reward_model is not None:
                 if not self.fixed_reward_model and self.ep > 0 and self.ep % self.reward_frequency == 0:
                     self.reward_model.train()
 
