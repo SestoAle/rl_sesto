@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.deepcrawl_arch import *
+from architectures.unity_cont_arch import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
@@ -19,14 +19,15 @@ if len(physical_devices) > 0:
 # Parse arguments for training
 parser = argparse.ArgumentParser()
 parser.add_argument('-mn', '--model-name', help="The name of the model", default='model')
-parser.add_argument('-gn', '--game-name', help="The name of the game", default="envs/DeepCrawl-Procedural-4")
+parser.add_argument('-gn', '--game-name', help="The name of the game", default=None)
 parser.add_argument('-wk', '--work-id', help="Work id for parallel training", default=0)
-parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=3000)
-parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=10)
-parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=100)
+parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=50000)
+parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=100)
+parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=40)
 parser.add_argument('-se', '--sampled-env', help="IRL", default=20)
 parser.add_argument('-rc', '--recurrent', dest='recurrent', action='store_true')
 parser.add_argument('-pl', '--parallel', dest='parallel', action='store_true')
+parser.add_argument('-ev', '--eval', dest='evaluation', action='store_true', help="If evaluation")
 
 # Parse argument for adversarial-play
 parser.add_argument('-ad', '--adversarial-play', help="Whether to use adversarial play",
@@ -45,12 +46,13 @@ parser.set_defaults(use_reward_model=False)
 parser.set_defaults(fixed_reward_model=False)
 parser.set_defaults(recurrent=False)
 parser.set_defaults(parallel=False)
+parser.set_defaults(evaluation=False)
 
 args = parser.parse_args()
 
 if __name__ == "__main__":
 
-    # DeepCrawl arguments
+    # Game arguments
     game_name = args.game_name
     model_name = args.model_name
     work_id = int(args.work_id)
@@ -58,10 +60,13 @@ if __name__ == "__main__":
     logging = int(args.logging)
     max_episode_timestep = int(args.max_timesteps)
     sampled_env = int(args.sampled_env)
+
     # Whether to use parallel executions
     parallel = args.parallel
+
     # Adversarial play
     adversarial_play = args.adversarial_play
+
     # IRL
     use_reward_model = args.use_reward_model
     reward_model_name = args.reward_model
@@ -69,40 +74,27 @@ if __name__ == "__main__":
     dems_name = args.dems_name
     reward_frequency = int(args.reward_frequency)
 
-
-    # Curriculum structure; here you can specify also the agent statistics (ATK, DES, DEF and HP)
     curriculum = {
         'current_step': 0,
-        'thresholds': [1e6, 1e6, 1e6, 1e6, 3e6, 3e6],
-        'parameters':
-            {
-                'minTargetHp': [1, 10, 10, 10, 10, 10, 10],
-                'maxTargetHp': [1, 10, 20, 20, 20, 20, 20],
-                'minAgentHp': [15, 10, 5, 5, 10, 10, 10],
-                'maxAgentHp': [20, 20, 20, 20, 20, 20, 20],
-                'minNumLoot': [0.2, 0.2, 0.2, 0.08, 0.04, 0.04, 0.04],
-                'maxNumLoot': [0.2, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3],
-                'minAgentMp': [0, 0, 0, 0, 0, 0, 0],
-                'maxAgentMp': [0, 0, 0, 0, 0, 0, 0],
-                'numActions': [17, 17, 17, 17, 17, 17, 17],
-                # Agent statistics
-                'agentAtk': [3, 3, 3, 3, 3, 3, 3],
-                'agentDef': [3, 3, 3, 3, 3, 3, 3],
-                'agentDes': [3, 3, 3, 3, 3, 3, 3],
-
-                'minStartingInitiative': [1, 1, 1, 1, 1, 1, 1],
-                'maxStartingInitiative': [1, 1, 1, 1, 1, 1, 1],
-
-                #'sampledEnv': [sampled_env]
-            }
+        "thresholds": [15000, 30000, 45000, 60000, 75000, 90000, 105000, 120000, 135000],
+        "parameters": {
+            "range": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+            "speed": [0, 0, 0, 0, 0, 4, 4, 4, 4, 4],
+            "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+            "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+        }
     }
 
     # Total episode of training
-    total_episode = 1e10
+    total_episode = 51000
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
-    frequency = 5
+    frequency = 10
     # Memory of the agent (in episode)
     memory = 10
 
@@ -112,6 +104,8 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
+                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models
         init = tf.compat.v1.global_variables_initializer()
@@ -130,28 +124,14 @@ if __name__ == "__main__":
 
     # Open the environment with all the desired flags
     if not parallel:
-        env = UnityEnvWrapper(game_name, no_graphics=True, seed=int(time.time()),
-                                  worker_id=work_id, with_stats=True, size_stats=31,
-                                  size_global=10, agent_separate=False, with_class=False, with_hp=False,
-                                  with_previous=True, verbose=False, manual_input=False,
-                                  _max_episode_timesteps=max_episode_timestep,
-
-                                  # Adversarial play
-                                  use_double_agent=adversarial_play, double_agent=double_agent, action_size=19,
-                          )
+        env = UnityEnvWrapper(game_name, no_graphics=True, seed=None, worker_id=work_id,
+                              _max_episode_timesteps=max_episode_timestep)
     else:
         # If parallel, create more environemnts
         envs = []
-        for i in range(5):
-            envs.append(UnityEnvWrapper(game_name, no_graphics=True, seed=int(time.time() + i),
-                                  worker_id=work_id + i, with_stats=True, size_stats=31,
-                                  size_global=10, agent_separate=False, with_class=False, with_hp=False,
-                                  with_previous=True, verbose=False, manual_input=False,
-                                  _max_episode_timesteps=max_episode_timestep,
-
-                                  # Adversarial play
-                                  use_double_agent=adversarial_play, double_agent=double_agent, action_size=19,
-                          ))
+        for i in range(1, 5):
+            envs.append(UnityEnvWrapper(game_name, no_graphics=True, seed=i, worker_id=work_id + i,
+                                        _max_episode_timesteps=max_episode_timestep))
 
     # If we want to use IRL, create a reward model
     reward_model = None
@@ -159,7 +139,7 @@ if __name__ == "__main__":
         graph = tf.compat.v1.Graph()
         with graph.as_default():
             reward_sess = tf.compat.v1.Session(graph=graph)
-            reward_model = RewardModel(actions_size=19, policy=agent, sess=reward_sess, name=model_name)
+            reward_model = RewardModel(actions_size=4, policy=agent, sess=reward_sess, name=model_name)
             # Initialize variables of models
             init = tf.compat.v1.global_variables_initializer()
             reward_sess.run(init)
@@ -170,25 +150,32 @@ if __name__ == "__main__":
 
     # Create runner
     if not parallel:
-        runner = Runner(agent=agent, frequency=frequency, env=env, save_frequency=save_frequency,
-                    logging=logging, total_episode=total_episode, curriculum=curriculum,
-                    frequency_mode=frequency_mode,
-                    reward_model=reward_model, reward_frequency=reward_frequency, dems_name=dems_name,
-                    fixed_reward_model=fixed_reward_model,
-
-                    # Adversarial play
-                    double_agent=double_agent, adversarial_play=adversarial_play
-                    )
+        runner = Runner(agent=agent, frequency=frequency, env=env, save_frequency=save_frequency, logging=logging,
+                        total_episode=total_episode,
+                        curriculum=curriculum,
+                        frequency_mode=frequency_mode,
+                        reward_model=reward_model,
+                        reward_frequency=reward_frequency,
+                        dems_name=dems_name,
+                        fixed_reward_model=fixed_reward_model,
+                        curriculum_mode='episodes',
+                        evaluation=eval,
+                        # Adversarial play
+                        double_agent=double_agent, adversarial_play=adversarial_play)
     else:
         runner = ParallelRunner(agent=agent, frequency=frequency, envs=envs, save_frequency=save_frequency,
-                        logging=logging, total_episode=total_episode, curriculum=curriculum,
-                        frequency_mode=frequency_mode,
-                        reward_model=reward_model, reward_frequency=reward_frequency, dems_name=dems_name,
-                        fixed_reward_model=fixed_reward_model,
-
-                        # Adversarial play
-                        double_agent=double_agent, adversarial_play=adversarial_play
-                        )
+                                logging=logging,
+                                total_episode=total_episode,
+                                curriculum=curriculum,
+                                frequency_mode=frequency_mode,
+                                reward_model=reward_model,
+                                reward_frequency=reward_frequency,
+                                dems_name=dems_name,
+                                fixed_reward_model=fixed_reward_model,
+                                curriculum_mode='episodes',
+                                evaluation=False,
+                                # Adversarial play
+                                double_agent=double_agent, adversarial_play=adversarial_play)
     try:
         runner.run()
     finally:

@@ -112,9 +112,9 @@ def transformer(input, n_head, hidden_size, mask_value=None, mlp_layer=1, poolin
     return input, att_weights
 
 def layer_norm(input_tensor, axis):
-  """Run layer normalization on the axis dimension of the tensor."""
-  layer_norma = tf.keras.layers.LayerNormalization(axis = axis)
-  return layer_norma(input_tensor)
+    """Run layer normalization on the axis dimension of the tensor."""
+    layer_norma = tf.keras.layers.LayerNormalization(axis = axis)
+    return layer_norma(input_tensor)
 
 # Circular 1D convolution
 def circ_conv1d(inp, **conv_kwargs):

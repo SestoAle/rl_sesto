@@ -34,6 +34,7 @@ def network_spec(states, baseline=False):
     conv_12 = conv_layer_2d(conv_11, 64, [3, 3], name='conv_12', activation=tf.nn.relu)
     flat_11 = tf.reshape(conv_12, [-1, 10 * 10 * 64])
 
+
     conv_20 = conv_layer_2d(local_state, 32, [1, 1], name='conv_20', activation=tf.nn.tanh, bias=False)
     conv_21 = conv_layer_2d(conv_20, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)

@@ -22,7 +22,7 @@ class PPO:
                  name='ppo', memory=10, norm_reward=False, model_name='agent', frequency_mode='episodes',
 
                  # LSTM
-                 recurrent=True, recurrent_length=8, recurrent_baseline=False,
+                 recurrent=False, recurrent_length=8, recurrent_baseline=False,
 
                  **kwargs):
 
@@ -88,7 +88,7 @@ class PPO:
                 self.p_network = self.linear(self.main_net, 256, name='p_fc1', activation=tf.nn.relu)
 
                 if not self.recurrent:
-                    self.p_network = self.linear(self.p_network, 256, name='p_fc2', activation=tf.nn.relu)
+                    self.p_network = self.linear(self.p_network, 64, name='p_fc2', activation=tf.nn.relu)
                 else:
                     # The last FC layer will be replaced by an LSTM layer.
                     # Recurrent network needs more variables
@@ -212,7 +212,7 @@ class PPO:
 
                 # Final p_layers
                 if not self.recurrent_baseline:
-                    self.v_network = self.linear(self.v_network, 256, name='v_fc1', activation=tf.nn.relu)
+                    self.v_network = self.linear(self.v_network, 128, name='v_fc1', activation=tf.nn.relu)
                 else:
                     # The last FC layer will be replaced by an LSTM layer.
                     # Recurrent network needs more variables
@@ -236,7 +236,7 @@ class PPO:
                     # Take only the last state of the sequence
                     self.v_network = self.v_rnn_state.h
 
-                self.v_network = self.linear(self.v_network, 256, name='v_fc2', activation=tf.nn.relu)
+                self.v_network = self.linear(self.v_network, 64, name='v_fc2', activation=tf.nn.relu)
 
                 # Value function
                 self.value = tf.squeeze(self.linear(self.v_network, 1))
@@ -499,7 +499,6 @@ class PPO:
         state = self.obs_to_state(state)
         feed_dict = self.create_state_feed_dict(state)
 
-
         if self.action_type == 'continuous':
             if self.distrbution_type == 'beta':
                 # Return mean as deterministic action
@@ -674,7 +673,7 @@ class PPO:
         tf.compat.v1.disable_eager_execution()
         self.saver.save(self.sess, '{}/{}'.format(folder, name))
 
-        if True:
+        if False:
             graph_def = self.sess.graph.as_graph_def()
 
             # freeze_graph clear_devices option
