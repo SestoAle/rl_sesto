@@ -61,6 +61,8 @@ if __name__ == "__main__":
     max_episode_timestep = int(args.max_timesteps)
     sampled_env = int(args.sampled_env)
 
+    evaluation = args.evaluation
+
     # Whether to use parallel executions
     parallel = args.parallel
 
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 51000
+    total_episode = 50000
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -159,7 +161,7 @@ if __name__ == "__main__":
                         dems_name=dems_name,
                         fixed_reward_model=fixed_reward_model,
                         curriculum_mode='episodes',
-                        evaluation=eval,
+                        evaluation=evaluation,
                         # Adversarial play
                         double_agent=double_agent, adversarial_play=adversarial_play)
     else:
