@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [15000, 30000, 45000, 60000, 75000, 90000, 105000, 120000, 135000],
+        "thresholds": [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
         "parameters": {
             "range": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     else:
         # If parallel, create more environemnts
         envs = []
-        for i in range(1, 5):
+        for i in range(1, 6):
             envs.append(UnityEnvWrapper(game_name, no_graphics=True, seed=i, worker_id=work_id + i,
                                         _max_episode_timesteps=max_episode_timestep))
 

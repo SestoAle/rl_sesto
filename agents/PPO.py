@@ -472,7 +472,6 @@ class PPO:
         feed_dict = self.create_state_feed_dict(state)
 
         action, logprob, probs = self.sess.run([self.action, self.log_prob, self.probs], feed_dict=feed_dict)
-
         return action, logprob, probs
 
     # Eval sampling the action, but with recurrent: it needs the internal hidden state
@@ -502,10 +501,12 @@ class PPO:
         if self.action_type == 'continuous':
             if self.distrbution_type == 'beta':
                 # Return mean as deterministic action
-                beta, alpha = self.sess.run([self.beta, self.alpha], feed_dict=feed_dict)
-                action = beta / (alpha + beta)
+                sampled_action, alpha, beta = self.sess.run([self.action, self.alpha, self.beta], feed_dict=feed_dict)
+                action = alpha / (alpha + beta)
                 action = self.action_min_value + (
                                 self.action_max_value - self.action_min_value) * action
+
+
             else:
                 # Return mean as deterministic action
                 action = self.sess.run([self.mean], feed_dict=feed_dict)
@@ -519,7 +520,6 @@ class PPO:
         else:
             probs = self.sess.run([self.probs], feed_dict=feed_dict)
             action = np.argmax(probs)
-
         return action
 
     # Eval with a given action
