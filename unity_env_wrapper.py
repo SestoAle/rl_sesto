@@ -84,8 +84,8 @@ class UnityEnvWrapper():
         raise Exception("end of time")
 
     def get_input_observation(self, env_info):
-
         '''
+
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
@@ -95,7 +95,6 @@ class UnityEnvWrapper():
             'actual_potion': np.asarray(env_info.vector_observations[0][58:59])
         }
         '''
-
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
@@ -105,5 +104,4 @@ class UnityEnvWrapper():
             'in_range': np.asarray(env_info.vector_observations[0][30:31]),
             'actual_potion': np.asarray(env_info.vector_observations[0][31:32])
         }
-
         return observation

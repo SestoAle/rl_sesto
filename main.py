@@ -76,25 +76,25 @@ if __name__ == "__main__":
     dems_name = args.dems_name
     reward_frequency = int(args.reward_frequency)
 
-    max_episode_timestep = 35
+    max_episode_timestep = 40
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [10000, 10000, 10000, 10000, 10000, 15000, 15000, 15000, 15000],
+        "thresholds": [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
         "parameters": {
             "range": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            "speed": [0, 0, 0, 0, 0, 0, 0, 4, 4, 4],
+            "speed": [1, 1, 2, 2, 3, 3, 4, 4, 4, 4],
             "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
             "attack_range_epsilon": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
-            "health_potion_reward": [8, 8, 8, 8, 8, 8, 0, 8, 8, 8]
+            "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
         }
     }
 
     # Total episode of training
-    total_episode = 50100
+    total_episode = 150100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=1e-4, p_num_itr=10, v_lr=1e-3, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=5e-5, p_num_itr=10, v_lr=5e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models
