@@ -2,12 +2,14 @@ import tensorflow as tf
 from utils import *
 from math import sqrt
 
-## Layers
+
+# Layers
 def linear(inp, inner_size, name='linear', bias=True, activation=None, init=None):
     with tf.compat.v1.variable_scope(name):
         lin = tf.compat.v1.layers.dense(inp, inner_size, name=name, activation=activation, use_bias=bias,
                                         kernel_initializer=init)
         return lin
+
 
 def transformer(input, n_head, hidden_size, mask_value=None, mlp_layer=1, pooling='None',
                     residual=True, with_embeddings=False, with_ffn=False, post_norm=False,
@@ -111,10 +113,12 @@ def transformer(input, n_head, hidden_size, mask_value=None, mlp_layer=1, poolin
 
     return input, att_weights
 
+
 def layer_norm(input_tensor, axis):
     """Run layer normalization on the axis dimension of the tensor."""
     layer_norma = tf.keras.layers.LayerNormalization(axis = axis)
     return layer_norma(input_tensor)
+
 
 # Circular 1D convolution
 def circ_conv1d(inp, **conv_kwargs):
@@ -138,13 +142,13 @@ def circ_conv1d(inp, **conv_kwargs):
     out = tf.reshape(out, shape=inp_shape[:3] + [conv_kwargs['filters']])
     return out
 
-def conv_layer_2d(input, filters, kernel_size, strides=(1, 1), padding="SAME", name='conv',
-                  activation=None, bias=True):
 
+def conv_layer_2d(input, filters, kernel_size, strides=(1, 1), padding="SAME", name='conv', activation=None, bias=True):
     with tf.compat.v1.variable_scope(name):
         conv = tf.compat.v1.layers.conv2d(input, filters, kernel_size, strides, padding=padding, name=name,
                                           activation=activation, use_bias=bias)
         return conv
+
 
 def embedding(input, indices, size, name='embs'):
     with tf.compat.v1.variable_scope(name):

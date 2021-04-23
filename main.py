@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.unity_cont_arch import *
+from architectures.cell_view_arch import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-mn', '--model-name', help="The name of the model", default='model')
 parser.add_argument('-gn', '--game-name', help="The name of the game", default=None)
 parser.add_argument('-wk', '--work-id', help="Work id for parallel training", default=0)
-parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=50000)
+parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=25000)
 parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=100)
 parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=40)
 parser.add_argument('-se', '--sampled-env', help="IRL", default=20)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     work_id = int(args.work_id)
     save_frequency = int(args.save_frequency)
     logging = int(args.logging)
-    max_episode_timestep = int(args.max_timesteps)
+    # max_episode_timestep = int(args.max_timesteps)
     sampled_env = int(args.sampled_env)
 
     evaluation = args.evaluation
@@ -76,23 +76,25 @@ if __name__ == "__main__":
     dems_name = args.dems_name
     reward_frequency = int(args.reward_frequency)
 
+    max_episode_timestep = 35
+
     curriculum = {
         'current_step': 0,
-        "thresholds": [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
+        "thresholds": [10000, 10000, 10000, 10000, 10000, 15000, 15000, 15000, 15000],
         "parameters": {
             "range": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            "speed": [0, 0, 0, 0, 0, 4, 4, 4, 4, 4],
+            "speed": [0, 0, 0, 0, 0, 0, 0, 4, 4, 4],
             "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
-            "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+            "attack_range_epsilon": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
+            "health_potion_reward": [8, 8, 8, 8, 8, 8, 0, 8, 8, 8]
         }
     }
 
     # Total episode of training
-    total_episode = 50000
+    total_episode = 50100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -106,7 +108,7 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=1e-4, p_num_itr=10, v_lr=1e-3, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models

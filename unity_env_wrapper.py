@@ -2,7 +2,6 @@ from mlagents.envs import UnityEnvironment
 
 import numpy as np
 
-import signal
 import time
 import logging
 
@@ -86,6 +85,7 @@ class UnityEnvWrapper():
 
     def get_input_observation(self, env_info):
 
+        '''
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
@@ -93,6 +93,16 @@ class UnityEnvWrapper():
             'env_objects': np.asarray(env_info.vector_observations[0][5:57]),
             'in_range': np.asarray(env_info.vector_observations[0][57:58]),
             'actual_potion': np.asarray(env_info.vector_observations[0][58:59])
+        }
+        '''
+
+        observation = {
+            'position': np.asarray(env_info.vector_observations[0][:2]),
+            'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
+            'target_position': np.asarray(env_info.vector_observations[0][3:5]),
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][5:30], dtype=np.int32), (5, 5, 1)),
+            'in_range': np.asarray(env_info.vector_observations[0][30:31]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][31:32])
         }
 
         return observation
