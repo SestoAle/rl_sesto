@@ -6,7 +6,9 @@ def input_spec():
     position = tf.compat.v1.placeholder(tf.float32, [None, 2], name='position')
     forward_direction = tf.compat.v1.placeholder(tf.float32, [None, 1], name='forward_direction')
     target_position = tf.compat.v1.placeholder(tf.float32, [None, 2], name='target_position')
-    cell_view = tf.compat.v1.placeholder(tf.int32, [None, 5, 5, 1], name='cell_view')
+    # Qui la cell_view deve avere dim=3, quindi (None, 5, 5) e non (None, 5, 5, 1)
+    # Ho fatto questo cambiamento anche nel file unity_env_wrapper.py
+    cell_view = tf.compat.v1.placeholder(tf.int32, [None, 5, 5], name='cell_view')
     in_range = tf.compat.v1.placeholder(tf.float32, [None, 1], name='in_range')
     actual_potion = tf.compat.v1.placeholder(tf.float32, [None, 1], name='actual_potion')
 
@@ -30,6 +32,7 @@ def obs_to_state(obs):
 def network_spec(states, baseline=False):
 
     # Cell view dovrebbe essere int16
+    # La cell_view sta sullo states[3] e non states[2]
     cell_view = tf.cast(states[3], tf.int32)
 
     emb = embedding(cell_view, indices=3, size=32)
