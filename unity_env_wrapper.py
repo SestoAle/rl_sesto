@@ -100,7 +100,8 @@ class UnityEnvWrapper():
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
             'target_position': np.asarray(env_info.vector_observations[0][3:5]),
-            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][5:30], dtype=np.int32), (5, 5, 1)),
+            # Per passarlo all'embedding deve avere 3 dimensioni, quindi (batch_size, 5, 5) e non (batch_size, 5, 5, 1)
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][5:30], dtype=np.int32), (5, 5)),
             'in_range': np.asarray(env_info.vector_observations[0][30:31]),
             'actual_potion': np.asarray(env_info.vector_observations[0][31:32])
         }
