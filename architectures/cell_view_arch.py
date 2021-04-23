@@ -30,7 +30,7 @@ def obs_to_state(obs):
 def network_spec(states, baseline=False):
 
     # Cell view dovrebbe essere int16
-    cell_view = tf.cast(states[2], tf.int32)
+    cell_view = tf.cast(states[3], tf.int32)
 
     emb = embedding(cell_view, indices=3, size=32)
     conv_21 = conv_layer_2d(emb, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
