@@ -35,7 +35,7 @@ def network_spec(states, baseline=False):
     # La cell_view sta sullo states[3] e non states[2]
     cell_view = tf.cast(states[3], tf.int32)
 
-    emb = embedding(cell_view, indices=3, size=32)
+    emb = embedding(cell_view, indices=4, size=32)
     conv_21 = conv_layer_2d(emb, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
     flat_21 = tf.reshape(conv_22, [-1, 5 * 5 * 64])

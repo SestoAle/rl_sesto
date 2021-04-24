@@ -82,11 +82,11 @@ if __name__ == "__main__":
         'current_step': 0,
         "thresholds": [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
         "parameters": {
-            "range": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            "range": [8, 9, 10, 11, 12, 13, 14, 14, 14, 14],
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            "speed": [1, 1, 2, 2, 3, 3, 4, 4, 4, 4],
+            "speed": [2, 3, 4, 4, 4, 4, 4, 4, 4, 4],
             "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
             "attack_range_epsilon": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
             "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 150100
+    total_episode = 1250100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
