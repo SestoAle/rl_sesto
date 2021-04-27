@@ -31,8 +31,10 @@ def obs_to_state(obs):
 # Main network specification. Usually, this network will be followed by 2 FC layers
 def network_spec(states, baseline=False):
 
-    # Cell view dovrebbe essere int16
-    # La cell_view sta sullo states[3] e non states[2]
+    # Aggiungo fc per aumentare la dimensione dello stato globale rispetto alla cell view
+    global_state = tf.concat([states[0], states[1], states[2], states[4], states[5]], axis=1)
+    fc_gs = linear(global_state, 256, name='fc_gs', activation=tf.nn.relu)
+
     cell_view = tf.cast(states[3], tf.int32)
 
     emb = embedding(cell_view, indices=4, size=32)
@@ -40,6 +42,6 @@ def network_spec(states, baseline=False):
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
     flat_21 = tf.reshape(conv_22, [-1, 5 * 5 * 64])
 
-    all_flat = tf.concat([states[0], states[1], states[2], flat_21, states[4], states[5]], axis=1)
+    all_flat = tf.concat([fc_gs, flat_21], axis=1)
 
     return all_flat

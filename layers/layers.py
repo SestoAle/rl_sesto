@@ -127,7 +127,7 @@ def circ_conv1d(inp, **conv_kwargs):
     conv_kwargs['activation'] = valid_activations[conv_kwargs['activation']]
 
     # Add T to input
-    inp = tf.expand_dims(inp, axis = 1)
+    inp = tf.expand_dims(inp, axis=1)
     # Concatenate input for circular convolution
     kernel_size = conv_kwargs['kernel_size']
     num_pad = kernel_size // 2
