@@ -65,6 +65,7 @@ if __name__ == "__main__":
 
     # Whether to use parallel executions
     parallel = args.parallel
+    n_envs = 10
 
     # Adversarial play
     adversarial_play = args.adversarial_play
@@ -80,9 +81,9 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
+        "thresholds": [20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000],
         "parameters": {
-            "range": [8, 9, 10, 11, 12, 13, 14, 14, 14, 14],
+            "range": [10, 11, 12, 13, 14, 14, 14, 14, 14, 14],
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 1250100
+    total_episode = 100100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     else:
         # If parallel, create more environemnts
         envs = []
-        for i in range(1, 6):
+        for i in range(1, n_envs + 1):
             envs.append(UnityEnvWrapper(game_name, no_graphics=True, seed=i, worker_id=work_id + i,
                                         _max_episode_timesteps=max_episode_timestep))
 
