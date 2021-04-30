@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.rays_arch import *
+from architectures.cell_view_arch import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
@@ -14,7 +14,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
 
 # Parse arguments for training
 parser = argparse.ArgumentParser()
@@ -87,7 +86,7 @@ if __name__ == "__main__":
             "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            "speed": [2, 3, 4, 4, 4, 4, 4, 4, 4, 4],
+            "speed": [2, 3, 4, 5, 6, 6, 6, 6, 6, 6],
             "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
             "attack_range_epsilon": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
             "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
@@ -95,7 +94,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 100100
+    total_episode = 125100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -109,7 +108,7 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=5e-5, p_num_itr=10, v_lr=5e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models

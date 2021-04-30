@@ -11,8 +11,9 @@ def input_spec():
     cell_view = tf.compat.v1.placeholder(tf.int32, [None, 5, 5], name='cell_view')
     in_range = tf.compat.v1.placeholder(tf.float32, [None, 1], name='in_range')
     actual_potion = tf.compat.v1.placeholder(tf.float32, [None, 1], name='actual_potion')
+    actual_HP = tf.compat.v1.placeholder(tf.float32, [None, 1], name='actual_HP')
 
-    return [position, forward_direction, target_position, cell_view, in_range, actual_potion]
+    return [position, forward_direction, target_position, cell_view, in_range, actual_potion, actual_HP]
 
 
 # Change the observation in real states
@@ -23,9 +24,10 @@ def obs_to_state(obs):
     cell_view_batch = np.stack([np.asarray(state['cell_view']) for state in obs])
     in_range_batch = np.stack([np.asarray(state['in_range']) for state in obs])
     actual_potion_batch = np.stack([np.asarray(state['actual_potion']) for state in obs])
+    actual_HP_batch = np.stack([np.asarray(state['actual_HP']) for state in obs])
 
     return [position_batch, forward_direction_batch, target_position_batch, cell_view_batch, in_range_batch,
-            actual_potion_batch]
+            actual_potion_batch, actual_HP_batch]
 
 
 # Main network specification. Usually, this network will be followed by 2 FC layers
@@ -42,6 +44,6 @@ def network_spec(states, baseline=False):
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
     flat_21 = tf.reshape(conv_22, [-1, 5 * 5 * 64])
 
-    all_flat = tf.concat([fc_gs, flat_21], axis=1)
+    all_flat = tf.concat([fc_gs, flat_21, states[6]], axis=1)
 
     return all_flat

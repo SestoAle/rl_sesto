@@ -6,7 +6,7 @@ def input_spec():
     position = tf.compat.v1.placeholder(tf.float32, [None, 2], name='position')
     forward_direction = tf.compat.v1.placeholder(tf.float32, [None, 1], name='forward_direction')
     target_position = tf.compat.v1.placeholder(tf.float32, [None, 2], name='target_position')
-    rays = tf.compat.v1.placeholder(tf.float32, [None, 45, 5], name='rays')
+    rays = tf.compat.v1.placeholder(tf.float32, [None, 36, 5], name='rays')
     in_range = tf.compat.v1.placeholder(tf.float32, [None, 1], name='in_range')
     actual_potion = tf.compat.v1.placeholder(tf.float32, [None, 1], name='actual_potion')
 
@@ -34,7 +34,7 @@ def network_spec(states, baseline=False):
     fc_gs = linear(global_state, 256, name='fc_gs', activation=tf.nn.relu)
 
     conv1d = circ_conv1d(states[3], filters=16, kernel_size=3, name='conv1d', activation='relu')
-    flat_conv1d = tf.reshape(conv1d, [-1, 16 * 45])
+    flat_conv1d = tf.reshape(conv1d, [-1, 16 * 36])
 
     all_flat = tf.concat([fc_gs, flat_conv1d], axis=1)
 

@@ -84,14 +84,14 @@ class UnityEnvWrapper():
         raise Exception("end of time")
 
     def get_input_observation(self, env_info):
-
+        '''
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
             'target_position': np.asarray(env_info.vector_observations[0][3:5]),
-            'rays': np.reshape(np.asarray(env_info.vector_observations[0][5:230]), (45, 5)),
-            'in_range': np.asarray(env_info.vector_observations[0][230:231]),
-            'actual_potion': np.asarray(env_info.vector_observations[0][231:232])
+            'rays': np.reshape(np.asarray(env_info.vector_observations[0][5:185]), (36, 5)),
+            'in_range': np.asarray(env_info.vector_observations[0][185:186]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][186:187])
         }
         '''
         observation = {
@@ -101,7 +101,8 @@ class UnityEnvWrapper():
             # Per passarlo all'embedding deve avere 3 dimensioni, quindi (batch_size, 5, 5) e non (batch_size, 5, 5, 1)
             'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][5:30], dtype=np.int32), (5, 5)),
             'in_range': np.asarray(env_info.vector_observations[0][30:31]),
-            'actual_potion': np.asarray(env_info.vector_observations[0][31:32])
+            'actual_potion': np.asarray(env_info.vector_observations[0][31:32]),
+            'actual_HP': np.asarray(env_info.vector_observations[0][32:33])
         }
-        '''
+
         return observation
