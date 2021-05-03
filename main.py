@@ -76,25 +76,24 @@ if __name__ == "__main__":
     dems_name = args.dems_name
     reward_frequency = int(args.reward_frequency)
 
-    max_episode_timestep = 40
+    max_episode_timestep = 50
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000, 20000],
+        "thresholds": [15000, 15000, 15000, 15000, 150000, 150000, 150000, 150000, 150000],
         "parameters": {
             "range": [10, 11, 12, 13, 14, 14, 14, 14, 14, 14],
-            "agent_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            "target_fixed": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
             "speed": [2, 3, 4, 5, 6, 6, 6, 6, 6, 6],
             "update_movement": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
             "attack_range_epsilon": [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5],
-            "health_potion_reward": [8, 8, 8, 8, 8, 8, 8, 8, 8, 8]
+            "health_potion_reward": [16, 16, 16, 16, 16, 16, 16, 16, 16, 16],
+            "max_target_HP": [5, 5, 15, 15, 30, 30, 50, 50, 50, 50],
         }
     }
 
     # Total episode of training
-    total_episode = 125100
+    total_episode = 175100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -108,7 +107,7 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=5e-6, p_num_itr=10, v_lr=5e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models
