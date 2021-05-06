@@ -41,7 +41,7 @@ class UnityEnvWrapper():
 
         env_info = None
 
-        while env_info == None:
+        while env_info is None:
             try:
                 logging.getLogger("mlagents.envs").setLevel(logging.WARNING)
                 env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
@@ -66,27 +66,19 @@ class UnityEnvWrapper():
         env_info = None
         info = []
 
-        while env_info == None:
-            try:
-                if self.use_double_agent:
-                    info = self.unity_env.step({self.default_brain: [actions], self.double_brain: []})
-                    env_info = info[self.default_brain]
-                else:
-                    env_info = self.unity_env.step([actions])[self.default_brain]
-
-            except Exception as exc:
-                self.close()
-                self.unity_env = self.open_unity_environment(self.game_name, self.no_graphics, seed=int(time.time()),
-                                                             worker_id=self.worker_id)
-                env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
-                print("The environment didn't respond, it was necessary to close and reopen it")
+        while env_info is None:
+            if self.use_double_agent:
+                info = self.unity_env.step({self.default_brain: [actions]})
+                env_info = info[self.default_brain]
+            else:
+                env_info = self.unity_env.step([actions])[self.default_brain]
 
         if self.use_double_agent:
             while len(env_info.vector_observations) <= 0:
                 double_info = info[self.double_brain]
                 double_obs = self.get_input_observation(double_info)
-                act = self.double_agent.eval([double_obs])[0]
-                info = self.unity_env.step({self.default_brain: [], self.double_brain: [act]})
+                act = self.double_agent.eval([double_obs])
+                info = self.unity_env.step({self.double_brain: [act]})
                 env_info = info[self.default_brain]
 
         reward = env_info.rewards[0]
