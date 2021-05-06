@@ -120,7 +120,7 @@ if __name__ == "__main__":
         graph = tf.compat.v1.Graph()
         with graph.as_default():
             double_sess = tf.compat.v1.Session(graph=graph)
-            double_agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
+            double_agent = PPO(double_sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
                     p_lr=5e-6, p_num_itr=10, v_lr=5e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
