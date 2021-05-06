@@ -128,13 +128,15 @@ if __name__ == "__main__":
     # Open the environment with all the desired flags
     if not parallel:
         env = UnityEnvWrapper(game_name, no_graphics=True, seed=None, worker_id=work_id,
-                              _max_episode_timesteps=max_episode_timestep)
+                              _max_episode_timesteps=max_episode_timestep,
+                              use_double_agent=adversarial_play, double_agent=double_agent)
     else:
         # If parallel, create more environemnts
         envs = []
         for i in range(1, n_envs + 1):
             envs.append(UnityEnvWrapper(game_name, no_graphics=True, seed=i, worker_id=work_id + i,
-                                        _max_episode_timesteps=max_episode_timestep))
+                                        _max_episode_timesteps=max_episode_timestep,
+                                        use_double_agent=adversarial_play, double_agent=double_agent))
 
     # If we want to use IRL, create a reward model
     reward_model = None

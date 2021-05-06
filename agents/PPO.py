@@ -385,7 +385,7 @@ class PPO:
                 v_loss, step = self.sess.run([self.mse_loss, self.v_step], feed_dict=feed_dict)
 
             v_losses.append(v_loss)
-
+        # print(v_losses)
         # Compute GAE for rewards. If lambda == 1, they are discounted rewards
         # Compute values for each state
 
@@ -463,7 +463,7 @@ class PPO:
                 feed_dict[self.recurrent_train_length] = self.recurrent_length
                 loss, step = self.sess.run([self.total_loss, self.p_step], feed_dict=feed_dict)
             losses.append(loss)
-
+        # print(losses)
         return np.mean(losses)
 
     # Eval sampling the action (done by the net)

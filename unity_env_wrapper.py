@@ -8,7 +8,10 @@ import logging
 
 class UnityEnvWrapper():
 
-    def __init__(self, game_name=None, no_graphics=True, seed=None, worker_id=0, config=None, _max_episode_timesteps=40):
+    def __init__(self, game_name=None, no_graphics=True, seed=None, worker_id=0, config=None, _max_episode_timesteps=40,
+                 # Double agent
+                 use_double_agent=False, double_agent=None
+                 ):
 
         self.game_name = game_name
         self.no_graphics = no_graphics
@@ -16,6 +19,12 @@ class UnityEnvWrapper():
         self.worker_id = worker_id
         self.unity_env = self.open_unity_environment(game_name, no_graphics, seed, worker_id)
         self.default_brain = self.unity_env.brain_names[0]
+
+        # Adversarial Play
+        self.use_double_agent = use_double_agent
+        if self.use_double_agent:
+            self.double_brain = self.unity_env.brain_names[1]
+            self.double_agent = double_agent
 
         self._max_episode_timesteps = _max_episode_timesteps
 
@@ -44,6 +53,10 @@ class UnityEnvWrapper():
                 env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
                 print("The environment didn't respond, it was necessary to close and reopen it")
 
+        if self.use_double_agent:
+            while len(env_info.vector_observations) <= 0:
+                env_info = self.unity_env.step()[self.default_brain]
+
         obs = self.get_input_observation(env_info)
 
         return obs
@@ -51,10 +64,15 @@ class UnityEnvWrapper():
     def execute(self, actions):
 
         env_info = None
+        info = []
 
         while env_info == None:
             try:
-                env_info = self.unity_env.step([actions])[self.default_brain]
+                if self.use_double_agent:
+                    info = self.unity_env.step({self.default_brain: [actions], self.double_brain: []})
+                    env_info = info[self.default_brain]
+                else:
+                    env_info = self.unity_env.step([actions])[self.default_brain]
 
             except Exception as exc:
                 self.close()
@@ -62,6 +80,14 @@ class UnityEnvWrapper():
                                                              worker_id=self.worker_id)
                 env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
                 print("The environment didn't respond, it was necessary to close and reopen it")
+
+        if self.use_double_agent:
+            while len(env_info.vector_observations) <= 0:
+                double_info = info[self.double_brain]
+                double_obs = self.get_input_observation(double_info)
+                act = self.double_agent.eval([double_obs])[0]
+                info = self.unity_env.step({self.default_brain: [], self.double_brain: [act]})
+                env_info = info[self.default_brain]
 
         reward = env_info.rewards[0]
         done = env_info.local_done[0]
