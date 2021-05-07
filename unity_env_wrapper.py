@@ -107,7 +107,6 @@ class UnityEnvWrapper():
             # Se il secondo agente non ha osservazioni, allora non vuole nessuna azione
             if len(info[self.double_brain].vector_observations) > 0:
                 # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
-                # Ora gli faccio fare delle azioni casuali
                 double_info = info[self.double_brain]
                 double_obs = self.get_input_observation(double_info)
                 self.double_action = self.double_agent.eval_max([double_obs])[0]
