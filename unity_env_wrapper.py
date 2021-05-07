@@ -77,7 +77,7 @@ class UnityEnvWrapper():
             while len(env_info.vector_observations) <= 0:
                 double_info = info[self.double_brain]
                 double_obs = self.get_input_observation(double_info)
-                act = self.double_agent.eval([double_obs])
+                act = self.double_agent.eval_max([double_obs])[0]
                 info = self.unity_env.step({self.double_brain: [act]})
                 env_info = info[self.default_brain]
 

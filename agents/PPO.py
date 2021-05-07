@@ -471,11 +471,6 @@ class PPO:
         state = self.obs_to_state(state)
         feed_dict = self.create_state_feed_dict(state)
 
-        print("State: ")
-        print(state)
-        print("Feed dict ")
-        print(feed_dict)
-
         action, logprob, probs = self.sess.run([self.action, self.log_prob, self.probs], feed_dict=feed_dict)
         return action, logprob, probs
 
