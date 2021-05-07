@@ -30,13 +30,15 @@ class UnityEnvWrapper():
 
         self.set_config(config)
 
+        self.count_moves = 0
+
     def entropy(self, props):
         entr = 0
         for p in props:
             entr += p * np.log(p)
 
         return - entr
-
+    
     def reset(self):
 
         env_info = None
@@ -44,7 +46,9 @@ class UnityEnvWrapper():
         while env_info is None:
             try:
                 logging.getLogger("mlagents.envs").setLevel(logging.WARNING)
-                env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
+
+                info = self.unity_env.reset(train_mode=True, config=self.config)
+                env_info = info[self.default_brain]
 
             except Exception as exc:
                 self.close()
@@ -52,10 +56,26 @@ class UnityEnvWrapper():
                                                              worker_id=self.worker_id)
                 env_info = self.unity_env.reset(train_mode=True, config=self.config)[self.default_brain]
                 print("The environment didn't respond, it was necessary to close and reopen it")
+        
+        if self.use_double_agent: 
+            # Può succedere che dopo un reset gli agenti non siano sincronizzati. Perchè?
+            # Pensandoci all'inizio entrambi gli agenti devono chiedere l'azione
+            # a meno che l'azione nell'episodio precedente non continui nell'episodio successivo
+            while len(env_info.vector_observations) == 0:
+                # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
+                double_info = info[self.double_brain]
+                double_obs = self.get_input_observation(double_info)
+                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                info = self.unity_env.step({self.default_brain: [], self.double_brain: self.double_action})
+                env_info = info[self.default_brain]
 
-        if self.use_double_agent:
-            while len(env_info.vector_observations) <= 0:
-                env_info = self.unity_env.step()[self.default_brain]
+            if len(info[self.double_brain].vector_observations) > 0:
+                # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
+                double_info = info[self.double_brain]
+                double_obs = self.get_input_observation(double_info)
+                self.double_action = self.double_agent.eval_max([double_obs])[0]
+            else:
+                self.double_action = []
 
         obs = self.get_input_observation(env_info)
 
@@ -68,18 +88,31 @@ class UnityEnvWrapper():
 
         while env_info is None:
             if self.use_double_agent:
-                info = self.unity_env.step({self.default_brain: [actions]})
+                info = self.unity_env.step({self.default_brain: [actions], self.double_brain: self.double_action})
+
                 env_info = info[self.default_brain]
             else:
                 env_info = self.unity_env.step([actions])[self.default_brain]
-
+        
         if self.use_double_agent:
-            while len(env_info.vector_observations) <= 0:
+            # Se il primo agente non ha osservazioni, allora è solo il secondo agente che vuole le azioni 
+            while len(env_info.vector_observations) == 0:
+                # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
                 double_info = info[self.double_brain]
                 double_obs = self.get_input_observation(double_info)
-                act = self.double_agent.eval_max([double_obs])[0]
-                info = self.unity_env.step({self.double_brain: [act]})
+                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                info = self.unity_env.step({self.default_brain: [], self.double_brain: self.double_action})
                 env_info = info[self.default_brain]
+            
+            # Se il secondo agente non ha osservazioni, allora non vuole nessuna azione
+            if len(info[self.double_brain].vector_observations) > 0:
+                # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
+                # Ora gli faccio fare delle azioni casuali
+                double_info = info[self.double_brain]
+                double_obs = self.get_input_observation(double_info)
+                self.double_action = self.double_agent.eval_max([double_obs])[0]
+            else:
+                self.double_action = []
 
         reward = env_info.rewards[0]
         done = env_info.local_done[0]
