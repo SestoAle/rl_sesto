@@ -78,7 +78,6 @@ class UnityEnvWrapper():
                 self.double_action = []
 
         obs = self.get_input_observation(env_info)
-
         return obs
 
     def execute(self, actions):
@@ -148,12 +147,13 @@ class UnityEnvWrapper():
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
             'target_position': np.asarray(env_info.vector_observations[0][3:5]),
+            'differences': np.asarray(env_info.vector_observations[0][5:7]),
             # Per passarlo all'embedding deve avere 3 dimensioni, quindi (batch_size, 5, 5) e non (batch_size, 5, 5, 1)
-            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][5:30], dtype=np.int32), (5, 5)),
-            'in_range': np.asarray(env_info.vector_observations[0][30:31]),
-            'actual_potion': np.asarray(env_info.vector_observations[0][31:32]),
-            'agent_actual_HP': np.asarray(env_info.vector_observations[0][32:33]),
-            'target_actual_HP': np.asarray(env_info.vector_observations[0][33:34])
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][7:56], dtype=np.int32), (7, 7)),
+            'in_range': np.asarray(env_info.vector_observations[0][56:57]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][57:58]),
+            'agent_actual_HP': np.asarray(env_info.vector_observations[0][58:59]),
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][59:60])
         }
 
         return observation
