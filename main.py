@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.cell_view_arch import *
+from architectures.global_cell_view_arch import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             "min_agent_HP": [10, 10, 10, 5, 5, 5],
             "max_agent_HP": [20, 20, 20, 20, 20, 20],
             "min_target_HP": [1, 1, 5, 5, 5, 5],
-            "max_target_HP": [5, 5, 10, 15, 15, 20],
+            "max_target_HP": [5, 5, 10, 15, 20, 20],
         }
     }
 

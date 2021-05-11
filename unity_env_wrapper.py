@@ -142,7 +142,7 @@ class UnityEnvWrapper():
             'in_range': np.asarray(env_info.vector_observations[0][185:186]),
             'actual_potion': np.asarray(env_info.vector_observations[0][186:187])
         }
-        '''
+
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
@@ -154,6 +154,16 @@ class UnityEnvWrapper():
             'actual_potion': np.asarray(env_info.vector_observations[0][57:58]),
             'agent_actual_HP': np.asarray(env_info.vector_observations[0][58:59]),
             'target_actual_HP': np.asarray(env_info.vector_observations[0][59:60])
+        }
+        '''
+
+        observation = {
+            'global_cell_view': np.reshape(np.asarray(env_info.vector_observations[0][0:361], dtype=np.int32), (19, 19)),
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][361:410], dtype=np.int32), (7, 7)),
+            'in_range': np.asarray(env_info.vector_observations[0][410:411]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][411:412]),
+            'agent_actual_HP': np.asarray(env_info.vector_observations[0][412:413]),
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][413:414])
         }
 
         return observation
