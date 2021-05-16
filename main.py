@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [25000, 25000, 25000, 25000, 51000],
+        "thresholds": [50000, 50000, 50000, 50000, 100000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1],
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 150100
+    total_episode = 300100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         tf.compat.v1.disable_eager_execution()
         sess = tf.compat.v1.Session(graph=graph)
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=7e-6, p_num_itr=10, v_lr=7e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
         # Initialize variables of models
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         with graph.as_default():
             double_sess = tf.compat.v1.Session(graph=graph)
             double_agent = PPO(double_sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
-                    p_lr=1e-5, p_num_itr=10, v_lr=1e-4, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
+                    p_lr=7e-6, p_num_itr=10, v_lr=7e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
                     memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
             # Initialize variables of models

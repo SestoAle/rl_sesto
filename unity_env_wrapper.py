@@ -158,12 +158,18 @@ class UnityEnvWrapper():
         '''
 
         observation = {
-            'global_cell_view': np.reshape(np.asarray(env_info.vector_observations[0][0:361], dtype=np.int32), (19, 19)),
+            'global_cell_view': np.reshape(np.asarray(env_info.vector_observations[0][0:361], dtype=np.int32),
+                                           (19, 19)),
             'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][361:410], dtype=np.int32), (7, 7)),
             'in_range': np.asarray(env_info.vector_observations[0][410:411]),
             'actual_potion': np.asarray(env_info.vector_observations[0][411:412]),
             'agent_actual_HP': np.asarray(env_info.vector_observations[0][412:413]),
-            'target_actual_HP': np.asarray(env_info.vector_observations[0][413:414])
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][413:414]),
+            'agent_actual_damage': np.asarray(env_info.vector_observations[0][414:415]),
+            'target_actual_damage': np.asarray(env_info.vector_observations[0][415:416]),
+            'agent_actual_def': np.asarray(env_info.vector_observations[0][416:417]),
+            'target_actual_def': np.asarray(env_info.vector_observations[0][417:418]),
+            'forward_direction': np.asarray(env_info.vector_observations[0][418:419])
         }
 
         return observation
