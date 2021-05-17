@@ -45,23 +45,23 @@ def network_spec(states, baseline=False):
     # Global cell view
     global_cell_view = tf.cast(states[0], tf.int32)
 
-    emb_global = embedding(global_cell_view, indices=6, size=16)
-    conv_global_1 = conv_layer_2d(emb_global, 16, [3, 3], name='conv_global_1', activation=tf.nn.relu)
+    emb_global = embedding(global_cell_view, indices=6, size=32)
+    conv_global_1 = conv_layer_2d(emb_global, 32, [3, 3], name='conv_global_1', activation=tf.nn.relu)
     conv_global_2 = conv_layer_2d(conv_global_1, 32, [3, 3], name='conv_global_2', activation=tf.nn.relu)
     flat_global = tf.reshape(conv_global_2, [-1, 19 * 19 * 32])
 
     # Local cell view
     local_cell_view = tf.cast(states[1], tf.int32)
 
-    emb_local = embedding(local_cell_view, indices=6, size=16)
-    conv_local_1 = conv_layer_2d(emb_local, 16, [3, 3], name='conv_local_1', activation=tf.nn.relu)
+    emb_local = embedding(local_cell_view, indices=6, size=32)
+    conv_local_1 = conv_layer_2d(emb_local, 32, [3, 3], name='conv_local_1', activation=tf.nn.relu)
     conv_local_2 = conv_layer_2d(conv_local_1, 32, [3, 3], name='conv_local_2', activation=tf.nn.relu)
     flat_local = tf.reshape(conv_local_2, [-1, 7 * 7 * 32])
 
     # Stato agenti + forward direction
     state = tf.concat([states[2], states[3], states[4], states[5], states[6], states[7], states[8], states[9],
                        states[10]], axis=1)
-    fc_state = linear(state, 256, name='fc_gs', activation=tf.nn.relu)
+    fc_state = linear(state, 512, name='fc_gs', activation=tf.nn.relu)
 
     all_flat = tf.concat([flat_global, flat_local, fc_state], axis=1)
 
