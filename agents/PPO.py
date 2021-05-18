@@ -151,6 +151,8 @@ class PPO:
                     self.action = self.dist.sample(name='action')
                 elif self.action_type == 'continuous':
                     self.action = self.dist.sample(name='action')
+                    if self.distrbution_type == 'beta':
+                        self.action = tf.clip_by_value(self.action, 0 + eps, 1 - eps)
 
                 self.log_prob = self.dist.log_prob(self.action)
                 # If there are more than 1 continuous actions, do the mean of log_probs
@@ -186,6 +188,7 @@ class PPO:
                         if self.distrbution_type == 'beta':
                             self.real_action = (self.eval_action - self.action_min_value) / (
                                     self.action_max_value - self.action_min_value)
+                            self.real_action = tf.clip_by_value(self.real_action, 0 + eps, 1 - eps)
 
                         # Gaussian Distribution
                         elif self.distrbution_type == 'gaussian':
