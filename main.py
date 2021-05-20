@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.global_cell_view_arch import *
+from architectures.transformer_arch import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time

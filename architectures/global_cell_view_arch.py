@@ -19,6 +19,7 @@ def input_spec():
     return [global_cell_view, cell_view, in_range, actual_potion, agent_actual_HP, target_actual_HP,
             agent_actual_damage, target_actual_damage, agent_actual_def, target_actual_def, forward_direction]
 
+# Posizione agente nella global
 
 # Change the observation in real states
 def obs_to_state(obs):
@@ -45,7 +46,7 @@ def network_spec(states, baseline=False):
     # Global cell view
     global_cell_view = tf.cast(states[0], tf.int32)
 
-    emb_global = embedding(global_cell_view, indices=6, size=32)
+    emb_global = embedding(global_cell_view, indices=7, size=32)
     conv_global_1 = conv_layer_2d(emb_global, 32, [3, 3], name='conv_global_1', activation=tf.nn.relu)
     conv_global_2 = conv_layer_2d(conv_global_1, 32, [3, 3], name='conv_global_2', activation=tf.nn.relu)
     flat_global = tf.reshape(conv_global_2, [-1, 19 * 19 * 32])
@@ -53,7 +54,7 @@ def network_spec(states, baseline=False):
     # Local cell view
     local_cell_view = tf.cast(states[1], tf.int32)
 
-    emb_local = embedding(local_cell_view, indices=6, size=32)
+    emb_local = embedding(local_cell_view, indices=7, size=32)
     conv_local_1 = conv_layer_2d(emb_local, 32, [3, 3], name='conv_local_1', activation=tf.nn.relu)
     conv_local_2 = conv_layer_2d(conv_local_1, 32, [3, 3], name='conv_local_2', activation=tf.nn.relu)
     flat_local = tf.reshape(conv_local_2, [-1, 7 * 7 * 32])

@@ -142,7 +142,6 @@ class UnityEnvWrapper():
             'in_range': np.asarray(env_info.vector_observations[0][185:186]),
             'actual_potion': np.asarray(env_info.vector_observations[0][186:187])
         }
-
         observation = {
             'position': np.asarray(env_info.vector_observations[0][:2]),
             'forward_direction': np.asarray(env_info.vector_observations[0][2:3]),
@@ -156,7 +155,17 @@ class UnityEnvWrapper():
             'target_actual_HP': np.asarray(env_info.vector_observations[0][59:60])
         }
         '''
-
+        observation = {
+            'transformer_global_input': np.reshape(np.asarray(env_info.vector_observations[0][:60], dtype=np.float32), (10, 6)),
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][60:109], dtype=np.int32), (7, 7)),
+            'position': np.asarray(env_info.vector_observations[0][109:111]),
+            'forward_direction': np.asarray(env_info.vector_observations[0][111:112]),
+            'in_range': np.asarray(env_info.vector_observations[0][112:113]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][113:114]),
+            'agent_actual_HP': np.asarray(env_info.vector_observations[0][114:115]),
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][115:116])
+        }
+        '''
         observation = {
             'global_cell_view': np.reshape(np.asarray(env_info.vector_observations[0][0:361], dtype=np.int32),
                                            (19, 19)),
@@ -171,5 +180,5 @@ class UnityEnvWrapper():
             'target_actual_def': np.asarray(env_info.vector_observations[0][417:418]),
             'forward_direction': np.asarray(env_info.vector_observations[0][418:419])
         }
-
+        '''
         return observation

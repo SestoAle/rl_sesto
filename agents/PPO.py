@@ -152,7 +152,7 @@ class PPO:
                 elif self.action_type == 'continuous':
                     self.action = self.dist.sample(name='action')
                     if self.distrbution_type == 'beta':
-                        self.action = tf.clip_by_value(self.action, 0 + eps, 1 - eps)
+                         self.action = tf.clip_by_value(self.action, 0 + eps, 1 - eps)
 
                 self.log_prob = self.dist.log_prob(self.action)
                 # If there are more than 1 continuous actions, do the mean of log_probs
