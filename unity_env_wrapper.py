@@ -156,7 +156,10 @@ class UnityEnvWrapper():
         }
         '''
         observation = {
-            'transformer_global_input': np.reshape(np.asarray(env_info.vector_observations[0][:60], dtype=np.float32), (10, 6)),
+            'target_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][:6], dtype=np.float32),
+                                                   (1, 6)),
+            'items_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][6:60], dtype=np.float32),
+                                                  (9, 6)),
             'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][60:109], dtype=np.int32), (7, 7)),
             'position': np.asarray(env_info.vector_observations[0][109:111]),
             'forward_direction': np.asarray(env_info.vector_observations[0][111:112]),
