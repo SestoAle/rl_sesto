@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [25000, 25000, 25000, 25000, 50000],
+        "thresholds": [25000, 25000, 25000, 25000, 150000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1],

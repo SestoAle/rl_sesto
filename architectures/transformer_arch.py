@@ -61,16 +61,16 @@ def network_spec(states, baseline=False):
 
     # Global Transformer
     global_transformer, _ = transformer(entity_embeddings, n_head=4, hidden_size=1024, mask_value=99,
-                                        with_embeddings=False, name='global_transformer', mask=mask, pooling='max')
+                                        with_embeddings=False, name='global_transformer', mask=mask, pooling='avg')
     flat_global = tf.reshape(global_transformer, [-1, 1024])
 
     # Local Cell View
     cell_view = tf.cast(states[2], tf.int32)
 
-    emb = embedding(cell_view, indices=7, size=16)
-    conv_21 = conv_layer_2d(emb, 16, [3, 3], name='conv_21', activation=tf.nn.relu)
-    conv_22 = conv_layer_2d(conv_21, 32, [3, 3], name='conv_22', activation=tf.nn.relu)
-    flat_local = tf.reshape(conv_22, [-1, 7 * 7 * 32])
+    emb = embedding(cell_view, indices=5, size=32)
+    conv_21 = conv_layer_2d(emb, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
+    conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
+    flat_local = tf.reshape(conv_22, [-1, 7 * 7 * 64])
 
     # Agent position + stats
     stats = tf.concat([states[3], states[4], states[5], states[6], states[7], states[8]], axis=1)

@@ -155,6 +155,7 @@ class UnityEnvWrapper():
             'target_actual_HP': np.asarray(env_info.vector_observations[0][59:60])
         }
         '''
+
         observation = {
             'target_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][:6], dtype=np.float32),
                                                    (1, 6)),
@@ -168,6 +169,7 @@ class UnityEnvWrapper():
             'agent_actual_HP': np.asarray(env_info.vector_observations[0][114:115]),
             'target_actual_HP': np.asarray(env_info.vector_observations[0][115:116])
         }
+
         '''
         observation = {
             'global_cell_view': np.reshape(np.asarray(env_info.vector_observations[0][0:361], dtype=np.int32),
@@ -184,4 +186,5 @@ class UnityEnvWrapper():
             'forward_direction': np.asarray(env_info.vector_observations[0][418:419])
         }
         '''
+
         return observation
