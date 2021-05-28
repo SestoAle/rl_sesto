@@ -167,7 +167,11 @@ class UnityEnvWrapper():
             'in_range': np.asarray(env_info.vector_observations[0][112:113]),
             'actual_potion': np.asarray(env_info.vector_observations[0][113:114]),
             'agent_actual_HP': np.asarray(env_info.vector_observations[0][114:115]),
-            'target_actual_HP': np.asarray(env_info.vector_observations[0][115:116])
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][115:116]),
+            'agent_actual_damage': np.asarray(env_info.vector_observations[0][116:117]),
+            'target_actual_damage': np.asarray(env_info.vector_observations[0][117:118]),
+            'agent_actual_def': np.asarray(env_info.vector_observations[0][118:119]),
+            'target_actual_def': np.asarray(env_info.vector_observations[0][119:120]),
         }
 
         '''
