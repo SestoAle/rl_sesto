@@ -60,19 +60,19 @@ def network_spec(states, baseline=False):
 
     target = states[0]
     target_mask = create_mask(target, 99)
-    target = linear(target, 1024, name='target_entity_emb', activation=tf.nn.tanh)
+    target = linear(target, 2048, name='target_entity_emb', activation=tf.nn.tanh)
 
     items = states[1]
     items_mask = create_mask(items, 99)
-    items = linear(items, 1024, name='items_entity_emb', activation=tf.nn.tanh)
+    items = linear(items, 2048, name='items_entity_emb', activation=tf.nn.tanh)
 
     entity_embeddings = tf.concat([target, items], axis=1)
     mask = tf.concat([target_mask, items_mask], axis=2)
 
     # Global Transformer
-    global_transformer, _ = transformer(entity_embeddings, n_head=4, hidden_size=1024, mask_value=99,
+    global_transformer, _ = transformer(entity_embeddings, n_head=4, hidden_size=2048, mask_value=99,
                                         with_embeddings=False, name='global_transformer', mask=mask, pooling='max')
-    flat_global = tf.reshape(global_transformer, [-1, 1024])
+    flat_global = tf.reshape(global_transformer, [-1, 2048])
 
     # Local Cell View
     cell_view = tf.cast(states[2], tf.int32)
