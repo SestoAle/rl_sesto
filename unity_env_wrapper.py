@@ -157,21 +157,21 @@ class UnityEnvWrapper():
         '''
 
         observation = {
-            'target_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][:6], dtype=np.float32),
-                                                   (1, 6)),
-            'items_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][6:60], dtype=np.float32),
-                                                  (9, 6)),
-            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][60:109], dtype=np.int32), (7, 7)),
-            'position': np.asarray(env_info.vector_observations[0][109:111]),
-            'forward_direction': np.asarray(env_info.vector_observations[0][111:112]),
-            'in_range': np.asarray(env_info.vector_observations[0][112:113]),
-            'actual_potion': np.asarray(env_info.vector_observations[0][113:114]),
-            'agent_actual_HP': np.asarray(env_info.vector_observations[0][114:115]),
-            'target_actual_HP': np.asarray(env_info.vector_observations[0][115:116]),
-            'agent_actual_damage': np.asarray(env_info.vector_observations[0][116:117]),
-            'target_actual_damage': np.asarray(env_info.vector_observations[0][117:118]),
-            'agent_actual_def': np.asarray(env_info.vector_observations[0][118:119]),
-            'target_actual_def': np.asarray(env_info.vector_observations[0][119:120]),
+            'target_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][:8], dtype=np.float32),
+                                                   (1, 8)),
+            'items_transformer_input': np.reshape(np.asarray(env_info.vector_observations[0][8:80], dtype=np.float32),
+                                                  (9, 8)),
+            'cell_view': np.reshape(np.asarray(env_info.vector_observations[0][80:129], dtype=np.int32), (7, 7)),
+            'position': np.asarray(env_info.vector_observations[0][129:131]),
+            'forward_direction': np.asarray(env_info.vector_observations[0][131:132]),
+            'in_range': np.asarray(env_info.vector_observations[0][132:133]),
+            'actual_potion': np.asarray(env_info.vector_observations[0][133:134]),
+            'agent_actual_HP': np.asarray(env_info.vector_observations[0][134:135]),
+            'target_actual_HP': np.asarray(env_info.vector_observations[0][135:136]),
+            'agent_actual_damage': np.asarray(env_info.vector_observations[0][136:137]),
+            'target_actual_damage': np.asarray(env_info.vector_observations[0][137:138]),
+            'agent_actual_def': np.asarray(env_info.vector_observations[0][138:139]),
+            'target_actual_def': np.asarray(env_info.vector_observations[0][139:140]),
         }
 
         '''

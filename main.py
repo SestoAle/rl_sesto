@@ -76,7 +76,7 @@ if __name__ == "__main__":
     dems_name = args.dems_name
     reward_frequency = int(args.reward_frequency)
 
-    max_episode_timestep = 50
+    max_episode_timestep = 100
 
     curriculum = {
         'current_step': 0,

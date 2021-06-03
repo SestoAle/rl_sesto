@@ -5,8 +5,8 @@ from layers.layers import *
 def input_spec():
 
     # Global
-    target_transformer_input = tf.compat.v1.placeholder(tf.float32, [None, 1, 6], name='target_transformer_input')
-    items_transformer_input = tf.compat.v1.placeholder(tf.float32, [None, 9, 6], name='items_transformer_input')
+    target_transformer_input = tf.compat.v1.placeholder(tf.float32, [None, 1, 8], name='target_transformer_input')
+    items_transformer_input = tf.compat.v1.placeholder(tf.float32, [None, 9, 8], name='items_transformer_input')
 
     # Local
     cell_view = tf.compat.v1.placeholder(tf.int32, [None, 7, 7], name='cell_view')
