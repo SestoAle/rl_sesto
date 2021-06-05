@@ -70,7 +70,7 @@ def network_spec(states, baseline=False):
     mask = tf.concat([target_mask, items_mask], axis=2)
 
     # Global Transformer
-    global_transformer, _ = transformer(entity_embeddings, n_head=4, hidden_size=2048, mask_value=99,
+    global_transformer, _ = transformer(entity_embeddings, n_head=8, hidden_size=2048, mask_value=99,
                                         with_embeddings=False, name='global_transformer', mask=mask, pooling='max')
     flat_global = tf.reshape(global_transformer, [-1, 2048])
 
