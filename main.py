@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [100000, 50000, 50000, 50000, 50000, 100000],
+        "thresholds": [75000, 50000, 50000, 50000, 50000, 125000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1],
@@ -92,9 +92,9 @@ if __name__ == "__main__":
             "min_target_HP": [1, 1, 5, 5, 5, 5, 20],
             "max_target_HP": [5, 5, 10, 15, 20, 20, 20],
             "max_items": [9, 9, 9, 8, 7, 6, 6],
-            "health_potion_frequency": [0.9, 0.9, 0.8, 0.7, 0.6, 0.6, 0.6],
-            "shield_frequency": [0.05, 0.05, 0.1, 0.15, 0.2, 0.2, 0.2],
-            "sword_frequency": [0.05, 0.05, 0.1, 0.15, 0.2, 0.2, 0.2],
+            "health_potion_frequency": [0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.5],
+            "shield_frequency": [0.05, 0.1, 0.15, 0.2, 0.25, 0.25, 0.25],
+            "sword_frequency": [0.05, 0.1, 0.15, 0.2, 0.25, 0.25, 0.25],
         }
     }
 
