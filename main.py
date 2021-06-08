@@ -80,16 +80,16 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [75000, 50000, 50000, 50000, 50000, 125000],
+        "thresholds": [50000, 50000, 50000, 50000, 50000, 175000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1],
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10],
             "target_update_rate": [10, 10, 10, 10, 10, 10, 10],
             "target_speed": [4, 5, 6, 6, 6, 6, 6],
-            "min_agent_HP": [1, 1, 5, 5, 5, 5, 20],
+            "min_agent_HP": [1, 1, 5, 5, 5, 20, 20],
             "max_agent_HP": [1, 5, 15, 20, 20, 20, 20],
-            "min_target_HP": [1, 1, 5, 5, 5, 5, 20],
+            "min_target_HP": [1, 1, 5, 5, 5, 20, 20],
             "max_target_HP": [5, 5, 10, 15, 20, 20, 20],
             "max_items": [9, 9, 9, 8, 7, 6, 6],
             "health_potion_frequency": [0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.5],
