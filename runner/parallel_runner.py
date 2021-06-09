@@ -4,6 +4,7 @@ import json
 from utils import NumpyEncoder
 import time
 from threading import Thread
+import glob
 
 # Act thread
 class ActThreaded(Thread):
@@ -122,7 +123,7 @@ class Runner:
                  # IRL
                  reward_model=None, fixed_reward_model=False, dems_name='', reward_frequency=30,
                  # Adversarial Play
-                 adversarial_play=False, double_agent=None,
+                 adversarial_play=False, double_agent=None, sample_adversarial=False, adversarial_frequency=10000,
                  **kwargs):
 
         # Runner objects and parameters
@@ -148,7 +149,10 @@ class Runner:
 
         # Adversarial play
         self.adversarial_play = adversarial_play
+        self.sample_adversarial = sample_adversarial
         self.double_agent = double_agent
+        self.adversarial_step = 1
+        self.adversarial_frequency = adversarial_frequency
         # If adversarial play, save the first version of the main agent and load it to the double agent
         if self.adversarial_play:
             self.agent.save_model(name=self.agent.model_name + '_0', folder='saved/adversarial')
@@ -211,6 +215,19 @@ class Runner:
                 self.history = self.load_model(agent.model_name, agent)
                 self.ep = len(self.history['episode_timesteps'])
                 self.total_step = np.sum(self.history['episode_timesteps'])
+
+                # If adversarial, check if there is an old enemy saved and load it
+                if self.adversarial_play:
+                    if not self.sample_adversarial:
+                        self.get_last_enemy()
+                    else:
+                        self.get_sampled_enemy()
+
+            if self.adversarial_play and answer == 'n':
+                # Delete all previous saved adversarial models
+                for filename in glob.glob("saved/adversarial/{}*".format(self.agent.model_name)):
+                    if not '_0.' in filename:
+                        os.remove(filename)
 
     # Return a list of thread, that will save the experience in the shared buffer
     # The thread will run for 1 episode
@@ -293,6 +310,7 @@ class Runner:
             # Reset the episode
             # Set actual curriculum
             config = self.set_curriculum(self.curriculum, self.history, self.curriculum_mode)
+
             if self.start_training == 0:
                 print(config)
             self.start_training = 1
@@ -385,7 +403,6 @@ class Runner:
             # Clear parallel buffer
             self.parallel_buffer = self.clear_parallel_buffer()
 
-
             # Logging information
             if self.ep > 0 and self.ep % self.logging == 0:
                 print('Mean of {} episode reward after {} episodes: {}'.
@@ -403,6 +420,10 @@ class Runner:
             if self.frequency_mode == 'episodes' and self.ep > 0 and self.ep % self.frequency == 0:
                 self.agent.train()
 
+                # If sample_adversarial is True, sample an enemy at the end of an update
+                if self.adversarial_play and self.sample_adversarial:
+                    self.get_sampled_enemy()
+
             # If IRL, update the reward model after reward_frequency episode
             if self.reward_model is not None:
                 if not self.fixed_reward_model and self.ep > 0 and self.ep % self.reward_frequency == 0:
@@ -414,6 +435,10 @@ class Runner:
                 if self.reward_model is not None:
                     if not self.fixed_reward_model:
                         self.reward_model.save_model('{}_{}'.format(self.agent.model_name, self.ep))
+
+            # if adversarial play, if adversarial_frequency are passed, save and load the new enemy
+            if self.adversarial_play and self.ep % self.adversarial_frequency == 0:
+                self.save_adversarial()
 
 
     def save_model(self, history, model_name, curriculum, agent):
@@ -475,19 +500,47 @@ class Runner:
         for (par, value) in parameters.items():
             config[par] = value[curriculum_step]
 
-        # If Adversarial play
-        if self.adversarial_play:
-            if curriculum_step > self.current_curriculum_step:
-                # Save the current version of the main agent
-                self.agent.save_model(name=self.agent.model_name + '_' + str(curriculum_step),
-                                      folder='saved/adversarial')
-                # Load the weights of the current version of the main agent to the double agent
-                self.double_agent.load_model(name=self.agent.model_name + '_' + str(curriculum_step),
-                                             folder='saved/adversarial')
-
         self.current_curriculum_step = curriculum_step
 
         return config
+
+    # Sample an enemy
+    def get_sampled_enemy(self):
+        filenames = []
+        for i in os.listdir('saved/adversarial'):
+            if os.path.isfile(os.path.join('saved/adversarial', i)) and self.agent.model_name in i and '.meta' in i:
+
+                filenames.append(i.replace('.meta', ''))
+
+        sampled_name = np.random.choice(filenames, 1)[0]
+        self.double_agent.load_model(name=sampled_name,
+                                     folder='saved/adversarial')
+
+    # Get the latest saved adversarial model
+    def get_last_enemy(self):
+        filenames = []
+        for i in os.listdir('saved/adversarial'):
+            if os.path.isfile(os.path.join('saved/adversarial', i)) and self.agent.model_name in i and '.meta' in i:
+                filenames.append(i.replace('.meta', ''))
+
+        last_number = len(filenames) - 1
+        self.double_agent.load_model(name=self.agent.model_name + '_' + str(last_number),
+                                     folder='saved/adversarial')
+        self.adversarial_step = last_number + 1
+
+    # Save the adversarial model to be used as enemy
+    def save_adversarial(self):
+        # Save the current version of the main agent
+        self.agent.save_model(name=self.agent.model_name + '_' + str(self.adversarial_step),
+                              folder='saved/adversarial')
+        # Load the weights of the current version of the main agent to the double agent
+        # Load the agent only if we do not use sample_adversarial
+        # If sample_adversarial is true, we sample an enemy every time we make an update
+        if not self.sample_adversarial:
+            self.double_agent.load_model(name=self.agent.model_name + '_' + str(self.adversarial_step),
+                                         folder='saved/adversarial')
+
+        self.adversarial_step += 1
 
     # For IRL, get initial experience from environment, the agent act in the env without update itself
     def get_experience(self, env, num_discriminator_exp=None, verbose=False, random=False):

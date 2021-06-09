@@ -31,7 +31,11 @@ parser.add_argument('-ev', '--eval', dest='evaluation', action='store_true', hel
 # Parse argument for adversarial-play
 parser.add_argument('-ad', '--adversarial-play', help="Whether to use adversarial play",
                     dest='adversarial_play', action='store_true')
+parser.add_argument('-sd', '--sample-adversarial', help="Whether to use sample the adversarial net",
+                    dest='sample_adversarial', action='store_true')
+parser.add_argument('-af', '--adversarial-frequency', help="How many episodes after save the enemy", default=10000)
 parser.set_defaults(adversarial_play=False)
+parser.set_defaults(sample_adversarial=False)
 
 # Parse arguments for Inverse Reinforcement Learning
 parser.add_argument('-irl', '--inverse-reinforcement-learning', dest='use_reward_model', action='store_true')
@@ -68,6 +72,8 @@ if __name__ == "__main__":
 
     # Adversarial play
     adversarial_play = args.adversarial_play
+    sample_adversarial = args.sample_adversarial
+    adversarial_frequency = int(args.adversarial_frequency)
 
     # IRL
     use_reward_model = args.use_reward_model
@@ -175,7 +181,10 @@ if __name__ == "__main__":
                         curriculum_mode='episodes',
                         evaluation=evaluation,
                         # Adversarial play
-                        double_agent=double_agent, adversarial_play=adversarial_play)
+                        double_agent=double_agent,
+                        adversarial_play=adversarial_play,
+                        adversarial_frequency=adversarial_frequency,
+                        sample_adversarial=sample_adversarial)
     else:
         runner = ParallelRunner(agent=agent, frequency=frequency, envs=envs, save_frequency=save_frequency,
                                 logging=logging,
@@ -189,7 +198,10 @@ if __name__ == "__main__":
                                 curriculum_mode='episodes',
                                 evaluation=False,
                                 # Adversarial play
-                                double_agent=double_agent, adversarial_play=adversarial_play)
+                                double_agent=double_agent,
+                                adversarial_play=adversarial_play,
+                                adversarial_frequency=adversarial_frequency,
+                                sample_adversarial=sample_adversarial)
     try:
         runner.run()
     finally:
