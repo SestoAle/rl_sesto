@@ -4,6 +4,7 @@ import json
 from utils import NumpyEncoder
 import time
 import glob
+import re
 
 class Runner:
     def __init__(self, agent, frequency, env, save_frequency=3000, logging=100, total_episode=1e10, curriculum=None,
@@ -103,9 +104,9 @@ class Runner:
 
                 # If adversarial, check if there is an old enemy saved and load it
                 if self.adversarial_play:
-                    if not self.sample_adversarial:
-                        self.get_last_enemy()
-                    else:
+
+                    self.get_last_enemy()
+                    if self.sample_adversarial:
                         self.get_sampled_enemy()
 
             if self.adversarial_play and answer == 'n':
@@ -384,9 +385,16 @@ class Runner:
         filenames = []
         for i in os.listdir('saved/adversarial'):
             if os.path.isfile(os.path.join('saved/adversarial', i)) and self.agent.model_name in i and '.meta' in i:
-                filenames.append(i.replace('.meta', ''))
+                filenames.append(i)
 
-        last_number = len(filenames) - 1
+        numbers = []
+        for filename in filenames:
+            filename = filename.split("_")
+            numbers.append(re.search('(.*?).meta', filename[-1]).group(1))
+
+        numbers = np.asarray(numbers).astype(int)
+
+        last_number = np.max(numbers)
         self.double_agent.load_model(name=self.agent.model_name + '_' + str(last_number),
                                      folder='saved/adversarial')
         self.adversarial_step = last_number + 1
