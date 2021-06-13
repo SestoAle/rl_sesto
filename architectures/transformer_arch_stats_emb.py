@@ -111,7 +111,7 @@ def network_spec(states, baseline=False):
 
     stats = tf.concat([states[3], states[4], states[5], potion, agent_HP, target_HP, agent_damage, target_damage,
                        agent_def, target_def], axis=1)
-    fc_stats = linear(stats, 512, name='fc_stats', activation=tf.nn.relu)
+    fc_stats = linear(stats, 1024, name='fc_stats', activation=tf.nn.relu)
 
     all_flat = tf.concat([flat_global, fc_stats, flat_local], axis=1)
 
