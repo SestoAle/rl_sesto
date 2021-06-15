@@ -1,6 +1,6 @@
 from layers.layers import *
 
-stats_embedding_size = 16
+stats_embedding_size = 32
 
 # Define the input specification
 def input_spec():
