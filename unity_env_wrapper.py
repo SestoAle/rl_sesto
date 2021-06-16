@@ -25,12 +25,17 @@ class UnityEnvWrapper():
         if self.use_double_agent:
             self.double_brain = self.unity_env.brain_names[1]
             self.double_agent = double_agent
+            # Whether is a recurrent agent or not. Useful for self-play.
+            self.recurrent = self.double_agent.recurrent
+            if self.recurrent:
+                self.double_internal = None
 
         self._max_episode_timesteps = _max_episode_timesteps
 
         self.set_config(config)
 
         self.count_moves = 0
+
 
     def entropy(self, props):
         entr = 0
@@ -58,26 +63,53 @@ class UnityEnvWrapper():
                 print("The environment didn't respond, it was necessary to close and reopen it")
 
         if self.use_double_agent:
+            # Reset internal state of the enemy
+            if self.recurrent:
+                self.double_internal = (np.zeros([1, self.double_agent.recurrent_size]),
+                                   np.zeros([1, self.double_agent.recurrent_size]))
+            self.prev_double_action = np.zeros(self.double_agent.action_size)
             # Può succedere che dopo un reset gli agenti non siano sincronizzati. Perchè?
             # Pensandoci all'inizio entrambi gli agenti devono chiedere l'azione
             # a meno che l'azione nell'episodio precedente non continui nell'episodio successivo
             while len(env_info.vector_observations) == 0:
                 # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
                 double_info = info[self.double_brain]
-                double_obs = self.get_input_observation(double_info)
-                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                if not self.recurrent:
+                    double_obs = self.get_input_observation(double_info)
+                    self.double_action = self.double_agent.eval_max([double_obs])[0]
+                else:
+                    double_reward = double_info.rewards[0]
+                    double_obs = self.get_input_observation_with_action(double_info, self.prev_double_action, double_reward)
+                    self.double_action, self.double_internal = self.double_agent.eval_max([double_obs],
+                                                                                          self.double_internal)
+                    self.double_action = self.double_action[0]
+                    self.prev_double_action = self.double_action
                 info = self.unity_env.step({self.default_brain: [], self.double_brain: self.double_action})
                 env_info = info[self.default_brain]
 
             if len(info[self.double_brain].vector_observations) > 0:
                 # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
                 double_info = info[self.double_brain]
-                double_obs = self.get_input_observation(double_info)
-                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                if not self.recurrent:
+                    double_obs = self.get_input_observation(double_info)
+                    self.double_action = self.double_agent.eval_max([double_obs])[0]
+                else:
+                    double_reward = double_info.rewards[0]
+                    double_obs = self.get_input_observation_with_action(double_info, self.prev_double_action,
+                                                                        double_reward)
+                    self.double_action, self.double_internal = self.double_agent.eval_max([double_obs],
+                                                                                          self.double_internal)
+                    self.double_action = self.double_action[0]
+                    self.prev_double_action = self.double_action
             else:
                 self.double_action = []
 
-        obs = self.get_input_observation(env_info)
+        if not self.recurrent:
+            obs = self.get_input_observation(env_info)
+        else:
+            prev_action = np.zeros(self.double_agent.action_size)
+            prev_reward = env_info.rewards[0]
+            obs = self.get_input_observation_with_action(env_info, prev_action, prev_reward)
         return obs
 
     def execute(self, actions):
@@ -98,8 +130,17 @@ class UnityEnvWrapper():
             while len(env_info.vector_observations) == 0:
                 # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
                 double_info = info[self.double_brain]
-                double_obs = self.get_input_observation(double_info)
-                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                if not self.recurrent:
+                    double_obs = self.get_input_observation(double_info)
+                    self.double_action = self.double_agent.eval_max([double_obs])[0]
+                else:
+                    double_reward = double_info.rewards[0]
+                    double_obs = self.get_input_observation_with_action(double_info, self.prev_double_action,
+                                                                        double_reward)
+                    self.double_action, self.double_internal = self.double_agent.eval_max([double_obs],
+                                                                                          self.double_internal)
+                    self.double_action = self.double_action[0]
+                    self.prev_double_action = self.double_action
                 info = self.unity_env.step({self.default_brain: [], self.double_brain: self.double_action})
                 env_info = info[self.default_brain]
 
@@ -107,15 +148,29 @@ class UnityEnvWrapper():
             if len(info[self.double_brain].vector_observations) > 0:
                 # Scegliere un'azione dalla rete secondo info[self.double_brain].vector_observations
                 double_info = info[self.double_brain]
-                double_obs = self.get_input_observation(double_info)
-                self.double_action = self.double_agent.eval_max([double_obs])[0]
+                if not self.recurrent:
+                    double_obs = self.get_input_observation(double_info)
+                    self.double_action = self.double_agent.eval_max([double_obs])[0]
+                else:
+                    double_reward = double_info.rewards[0]
+                    double_obs = self.get_input_observation_with_action(double_info, self.prev_double_action,
+                                                                        double_reward)
+                    self.double_action, self.double_internal = self.double_agent.eval_max([double_obs],
+                                                                                          self.double_internal)
+                    self.double_action = self.double_action[0]
+                    self.prev_double_action = self.double_action
             else:
                 self.double_action = []
 
         reward = env_info.rewards[0]
         done = env_info.local_done[0]
 
-        observation = self.get_input_observation(env_info)
+        if not self.recurrent:
+            observation = self.get_input_observation(env_info)
+        else:
+            prev_action = actions
+            prev_reward = reward
+            observation = self.get_input_observation_with_action(env_info, prev_action, prev_reward)
 
         return [observation, done, reward]
 
@@ -191,4 +246,11 @@ class UnityEnvWrapper():
         }
         '''
 
+        return observation
+
+    # For recurrent, we must add to input observation the previous action and reward
+    def get_input_observation_with_action(self, env_info, action, reward):
+        observation = self.get_input_observation(env_info)
+        observation['prev_action'] = action
+        observation['prev_reward'] = [reward]
         return observation

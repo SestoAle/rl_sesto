@@ -22,7 +22,7 @@ class PPO:
                  name='ppo', memory=10, norm_reward=False, model_name='agent', frequency_mode='episodes',
 
                  # LSTM
-                 recurrent=False, recurrent_length=8, recurrent_baseline=False,
+                 recurrent=False, recurrent_length=4, recurrent_baseline=False,
 
                  **kwargs):
 
@@ -63,7 +63,7 @@ class PPO:
         self.recurrent = recurrent
         self.recurrent_baseline = recurrent_baseline
         self.recurrent_length = recurrent_length
-        self.recurrent_size = 256
+        self.recurrent_size = 64
 
         self.buffer = dict()
         self.clear_buffer()
@@ -92,6 +92,14 @@ class PPO:
                 else:
                     # The last FC layer will be replaced by an LSTM layer.
                     # Recurrent network needs more variables
+
+                    # Typically, the previous action and reward are concatenated before lstm layer
+                    # I assume that these two placeholders are already in the input_spec()
+                    # In particular, I assume that they will be the *last two inputs* of the spec
+                    self.prev_action = self.inputs[-2]
+                    self.prev_reward = self.inputs[-1]
+
+                    self.p_network = tf.concat([self.p_network, self.prev_action, self.prev_reward], axis=1)
 
                     # Get batch size and number of feature of the previous layer
                     bs, feature = utils.shape_list(self.p_network)
@@ -496,23 +504,33 @@ class PPO:
         return action, logprob, probs, internal, v_internal
 
     # Eval with argmax
-    def eval_max(self, state):
+    def eval_max(self, state, internal=None):
 
         state = self.obs_to_state(state)
         feed_dict = self.create_state_feed_dict(state)
+        # Pass the internal state
+        if internal != None:
+            feed_dict[self.state_in] = internal
+            feed_dict[self.recurrent_train_length] = 1
+            feed_dict[self.sequence_lengths] = [1]
 
         if self.action_type == 'continuous':
             if self.distrbution_type == 'beta':
                 # Return mean as deterministic action
-                sampled_action, alpha, beta = self.sess.run([self.action, self.alpha, self.beta], feed_dict=feed_dict)
+                if internal == None:
+                    sampled_action, alpha, beta = self.sess.run([self.action, self.alpha, self.beta], feed_dict=feed_dict)
+                else:
+                    sampled_action, alpha, beta, internal = self.sess.run([self.action, self.alpha, self.beta, self.rnn_state],
+                                                                feed_dict=feed_dict)
                 action = alpha / (alpha + beta)
                 action = self.action_min_value + (
                                 self.action_max_value - self.action_min_value) * action
-
-
             else:
                 # Return mean as deterministic action
-                action = self.sess.run([self.mean], feed_dict=feed_dict)
+                if internal == None:
+                    action = self.sess.run([self.mean], feed_dict=feed_dict)
+                else:
+                    action, internal = self.sess.run([self.mean, self.rnn_state], feed_dict=feed_dict)
                 action = tf.tanh(action)
                 one = tf.constant(value=1.0, dtype=tf.float32)
                 half = tf.constant(value=0.5, dtype=tf.float32)
@@ -521,9 +539,16 @@ class PPO:
                 action = min_value + (max_value - min_value) * half * (action + one)
 
         else:
-            probs = self.sess.run([self.probs], feed_dict=feed_dict)
+            if internal == None:
+                probs = self.sess.run([self.probs], feed_dict=feed_dict)
+            else:
+                probs, internal = self.sess.run([self.probs, self.rnn_state], feed_dict=feed_dict)
             action = np.argmax(probs)
-        return action
+        if internal == None:
+            return action
+        else:
+            return action, internal
+
 
     # Eval with a given action
     def eval_action(self, states, actions):
