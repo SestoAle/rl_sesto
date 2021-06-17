@@ -104,7 +104,12 @@ class Runner:
 
                 # If adversarial, check if there is an old enemy saved and load it
                 if self.adversarial_play:
-
+                    # If evaluation, use the same agent as the enemy
+                    if self.evaluation:
+                        self.agent.save_model(name=self.agent.model_name + '_eval', folder='saved/adversarial')
+                        self.double_agent.load_model(name=self.agent.model_name + '_eval', folder='saved/adversarial')
+                        for filename in glob.glob("saved/adversarial/{}_eval*".format(self.agent.model_name)):
+                            os.remove(filename)
                     self.get_last_enemy()
                     if self.sample_adversarial:
                         self.get_sampled_enemy()
