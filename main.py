@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.transformer_arch_stats_emb import *
+from architectures.transformer_arch_stats_emb_recurrent import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
