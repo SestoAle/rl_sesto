@@ -1,6 +1,6 @@
 from layers.layers import *
 
-stats_embedding_size = 32
+stats_embedding_size = 16
 
 # Define the input specification
 def input_spec():
@@ -14,7 +14,7 @@ def input_spec():
     # Agent Position
     position = tf.compat.v1.placeholder(tf.float32, [None, 2], name='position')
     forward_direction = tf.compat.v1.placeholder(tf.float32, [None, 1], name='forward_direction')
-    in_range = tf.compat.v1.placeholder(tf.float32, [None, 1], name='in_range')
+    in_range = tf.compat.v1.placeholder(tf.int32, [None, 1], name='in_range')
 
     # Stats
     actual_potion = tf.compat.v1.placeholder(tf.int32, [None, 1], name='actual_potion')
@@ -75,14 +75,19 @@ def network_spec(states, baseline=False):
     # Local Cell View
     cell_view = states[2]
 
-    emb = embedding(cell_view, indices=7, size=32)
+    emb = embedding(cell_view, indices=8, size=32)
     conv_21 = conv_layer_2d(emb, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
     flat_local = tf.reshape(conv_22, [-1, 7 * 7 * 64])
 
     # Agent position + hard embeddings for stats
+
+    in_range = states[5]
+    in_range = embedding(in_range, indices=2, size=stats_embedding_size)
+    in_range = tf.reshape(in_range, [-1, stats_embedding_size])
+
     potion = states[6]
-    potion = embedding(potion, indices=2, size=stats_embedding_size)
+    potion = embedding(potion, indices=3, size=stats_embedding_size)
     potion = tf.reshape(potion, [-1, stats_embedding_size])
 
     agent_HP = states[7]
@@ -94,22 +99,22 @@ def network_spec(states, baseline=False):
     target_HP = tf.reshape(target_HP, [-1, stats_embedding_size])
 
     agent_damage = states[9]
-    agent_damage = embedding(agent_damage, indices=14, size=stats_embedding_size)
+    agent_damage = embedding(agent_damage, indices=19, size=stats_embedding_size)
     agent_damage = tf.reshape(agent_damage, [-1, stats_embedding_size])
 
     target_damage = states[10]
-    target_damage = embedding(target_damage, indices=14, size=stats_embedding_size)
+    target_damage = embedding(target_damage, indices=19, size=stats_embedding_size)
     target_damage = tf.reshape(target_damage, [-1, stats_embedding_size])
 
     agent_def = states[11]
-    agent_def = embedding(agent_def, indices=9, size=stats_embedding_size)
+    agent_def = embedding(agent_def, indices=14, size=stats_embedding_size)
     agent_def = tf.reshape(agent_def, [-1, stats_embedding_size])
 
     target_def = states[12]
-    target_def = embedding(target_def, indices=9, size=stats_embedding_size)
+    target_def = embedding(target_def, indices=14, size=stats_embedding_size)
     target_def = tf.reshape(target_def, [-1, stats_embedding_size])
 
-    stats = tf.concat([states[3], states[4], states[5], potion, agent_HP, target_HP, agent_damage, target_damage,
+    stats = tf.concat([states[3], states[4], in_range, potion, agent_HP, target_HP, agent_damage, target_damage,
                        agent_def, target_def], axis=1)
     fc_stats = linear(stats, 1024, name='fc_stats', activation=tf.nn.relu)
 
