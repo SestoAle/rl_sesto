@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [50000, 50000, 50000, 50000, 50000, 175000],
+        "thresholds": [50000, 50000, 50000, 50000, 50000, 375000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1],
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 400100
+    total_episode = 600100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
