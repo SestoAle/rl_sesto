@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [50000, 50000, 50000, 50000, 50000, 375000],
+        "thresholds": [100000, 50000, 50000, 50000, 50000, 575000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1],
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 600100
+    total_episode = 400100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
@@ -122,7 +122,8 @@ if __name__ == "__main__":
         agent = PPO(sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
                     p_lr=7e-6, p_num_itr=10, v_lr=7e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
-                    memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
+                    memory=memory, model_name=model_name, recurrent=args.recurrent, recurrent_length=8,
+                    frequency_mode=frequency_mode)
         # Initialize variables of models
         init = tf.compat.v1.global_variables_initializer()
         sess.run(init)
@@ -136,7 +137,8 @@ if __name__ == "__main__":
             double_agent = PPO(double_sess, input_spec=input_spec, network_spec=network_spec, obs_to_state=obs_to_state,
                     p_lr=7e-6, p_num_itr=10, v_lr=7e-5, v_batch_fraction=1.0, v_num_itr=1, action_size=4,
                     action_type='continuous', distribution='beta',
-                    memory=memory, model_name=model_name, recurrent=args.recurrent, frequency_mode=frequency_mode)
+                    memory=memory, model_name=model_name, recurrent=args.recurrent, recurrent_length=8,
+                    frequency_mode=frequency_mode)
             # Initialize variables of models
             init = tf.compat.v1.global_variables_initializer()
             double_sess.run(init)

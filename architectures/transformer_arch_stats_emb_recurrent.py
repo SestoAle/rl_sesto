@@ -1,6 +1,6 @@
 from layers.layers import *
 
-stats_embedding_size = 16
+stats_embedding_size = 32
 
 # Define the input specification
 def input_spec():
@@ -88,7 +88,7 @@ def network_spec(states, baseline=False):
     # Local Cell View
     cell_view = states[2]
 
-    emb = embedding(cell_view, indices=7, size=32)
+    emb = embedding(cell_view, indices=8, size=32)
     conv_21 = conv_layer_2d(emb, 32, [3, 3], name='conv_21', activation=tf.nn.relu)
     conv_22 = conv_layer_2d(conv_21, 64, [3, 3], name='conv_22', activation=tf.nn.relu)
     flat_local = tf.reshape(conv_22, [-1, 7 * 7 * 64])
