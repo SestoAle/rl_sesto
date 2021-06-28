@@ -16,8 +16,12 @@ def input_spec():
     forward_direction = tf.compat.v1.placeholder(tf.float32, [None, 1], name='forward_direction')
     in_range = tf.compat.v1.placeholder(tf.int32, [None, 1], name='in_range')
 
+    # Potions
+    actual_health_potion = tf.compat.v1.placeholder(tf.int32, [None, 1], name='actual_health_potion')
+    actual_bonus_potion = tf.compat.v1.placeholder(tf.int32, [None, 1], name='actual_bonus_potion')
+    active_bonus_potion = tf.compat.v1.placeholder(tf.int32, [None, 1], name='active_bonus_potion')
+
     # Stats
-    actual_potion = tf.compat.v1.placeholder(tf.int32, [None, 1], name='actual_potion')
     agent_actual_HP = tf.compat.v1.placeholder(tf.int32, [None, 1], name='agent_actual_HP')
     target_actual_HP = tf.compat.v1.placeholder(tf.int32, [None, 1], name='target_actual_HP')
     agent_actual_damage = tf.compat.v1.placeholder(tf.int32, [None, 1], name='agent_actual_damage')
@@ -26,8 +30,8 @@ def input_spec():
     target_actual_def = tf.compat.v1.placeholder(tf.int32, [None, 1], name='target_actual_def')
 
     return [target_transformer_input, items_transformer_input, cell_view, position, forward_direction, in_range,
-            actual_potion, agent_actual_HP, target_actual_HP, agent_actual_damage, target_actual_damage,
-            agent_actual_def, target_actual_def]
+            actual_health_potion, actual_bonus_potion, active_bonus_potion, agent_actual_HP, target_actual_HP,
+            agent_actual_damage, target_actual_damage, agent_actual_def, target_actual_def]
 
 
 # Change the observation in real states
@@ -41,7 +45,10 @@ def obs_to_state(obs):
     forward_direction_batch = np.stack([np.asarray(state['forward_direction']) for state in obs])
     in_range_batch = np.stack([np.asarray(state['in_range']) for state in obs])
 
-    actual_potion_batch = np.stack([np.asarray(state['actual_potion']) for state in obs])
+    actual_health_potion_batch = np.stack([np.asarray(state['actual_health_potion']) for state in obs])
+    actual_bonus_potion_batch = np.stack([np.asarray(state['actual_bonus_potion']) for state in obs])
+    active_bonus_potion_batch = np.stack([np.asarray(state['active_bonus_potion']) for state in obs])
+
     agent_actual_HP_batch = np.stack([np.asarray(state['agent_actual_HP']) for state in obs])
     target_actual_HP_batch = np.stack([np.asarray(state['target_actual_HP']) for state in obs])
     agent_actual_damage_batch = np.stack([np.asarray(state['agent_actual_damage']) for state in obs])
@@ -50,8 +57,9 @@ def obs_to_state(obs):
     target_actual_def_batch = np.stack([np.asarray(state['target_actual_def']) for state in obs])
 
     return [target_transformer_input_batch, items_transformer_input_batch, cell_view_batch, position_batch,
-            forward_direction_batch, in_range_batch, actual_potion_batch, agent_actual_HP_batch, target_actual_HP_batch,
-            agent_actual_damage_batch, target_actual_damage_batch, agent_actual_def_batch, target_actual_def_batch]
+            forward_direction_batch, in_range_batch, actual_health_potion_batch, actual_bonus_potion_batch,
+            active_bonus_potion_batch, agent_actual_HP_batch, target_actual_HP_batch, agent_actual_damage_batch,
+            target_actual_damage_batch, agent_actual_def_batch, target_actual_def_batch]
 
 
 # Main network specification. Usually, this network will be followed by 2 FC layers
@@ -86,36 +94,44 @@ def network_spec(states, baseline=False):
     in_range = embedding(in_range, indices=2, size=stats_embedding_size)
     in_range = tf.reshape(in_range, [-1, stats_embedding_size])
 
-    potion = states[6]
-    potion = embedding(potion, indices=3, size=stats_embedding_size)
-    potion = tf.reshape(potion, [-1, stats_embedding_size])
+    health_potion = states[6]
+    health_potion = embedding(health_potion, indices=2, size=stats_embedding_size)
+    health_potion= tf.reshape(health_potion, [-1, stats_embedding_size])
 
-    agent_HP = states[7]
+    bonus_potion = states[7]
+    bonus_potion = embedding(bonus_potion, indices=2, size=stats_embedding_size)
+    bonus_potion = tf.reshape(bonus_potion, [-1, stats_embedding_size])
+
+    active_bonus_potion = states[8]
+    active_bonus_potion = embedding(active_bonus_potion, indices=2, size=stats_embedding_size)
+    active_bonus_potion= tf.reshape(active_bonus_potion, [-1, stats_embedding_size])
+
+    agent_HP = states[9]
     agent_HP = embedding(agent_HP, indices=20, size=stats_embedding_size)
     agent_HP = tf.reshape(agent_HP, [-1, stats_embedding_size])
 
-    target_HP = states[8]
+    target_HP = states[10]
     target_HP = embedding(target_HP, indices=20, size=stats_embedding_size)
     target_HP = tf.reshape(target_HP, [-1, stats_embedding_size])
 
-    agent_damage = states[9]
+    agent_damage = states[11]
     agent_damage = embedding(agent_damage, indices=19, size=stats_embedding_size)
     agent_damage = tf.reshape(agent_damage, [-1, stats_embedding_size])
 
-    target_damage = states[10]
+    target_damage = states[12]
     target_damage = embedding(target_damage, indices=19, size=stats_embedding_size)
     target_damage = tf.reshape(target_damage, [-1, stats_embedding_size])
 
-    agent_def = states[11]
+    agent_def = states[13]
     agent_def = embedding(agent_def, indices=14, size=stats_embedding_size)
     agent_def = tf.reshape(agent_def, [-1, stats_embedding_size])
 
-    target_def = states[12]
+    target_def = states[14]
     target_def = embedding(target_def, indices=14, size=stats_embedding_size)
     target_def = tf.reshape(target_def, [-1, stats_embedding_size])
 
-    stats = tf.concat([states[3], states[4], in_range, potion, agent_HP, target_HP, agent_damage, target_damage,
-                       agent_def, target_def], axis=1)
+    stats = tf.concat([states[3], states[4], in_range, health_potion, bonus_potion, active_bonus_potion, agent_HP,
+                       target_HP, agent_damage, target_damage, agent_def, target_def], axis=1)
     fc_stats = linear(stats, 1024, name='fc_stats', activation=tf.nn.relu)
 
     # Global + Local + Stats

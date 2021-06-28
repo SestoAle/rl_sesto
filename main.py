@@ -1,6 +1,6 @@
 from agents.PPO import PPO
 from runner.runner import Runner
-from architectures.transformer_arch_stats_emb_recurrent import *
+from architectures.transformer_arch_stats_emb import *
 from runner.parallel_runner import Runner as ParallelRunner
 import os
 import time
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     curriculum = {
         'current_step': 0,
-        "thresholds": [100000, 50000, 50000, 50000, 50000, 575000],
+        "thresholds": [50000, 50000, 50000, 50000, 50000, 575000],
         "parameters": {
             "spawn_range": [10, 11, 12, 13, 14, 14, 14],
             "attack_range_epsilon": [1, 1, 1, 1, 1, 1, 1],
@@ -97,11 +97,11 @@ if __name__ == "__main__":
             "max_agent_HP": [1, 5, 15, 20, 20, 20, 20],
             "min_target_HP": [1, 1, 5, 5, 5, 20, 20],
             "max_target_HP": [5, 5, 10, 15, 20, 20, 20],
-            "max_items": [9, 9, 9, 8, 7, 6, 6],
-            "health_potion_frequency": [0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.5],
-            "shield_frequency": [0.03, 0.05, 0.1, 0.1, 0.15, 0.15, 0.15],
-            "sword_frequency": [0.03, 0.05, 0.1, 0.1, 0.15, 0.15, 0.15],
-            "bonus_potion_frequency": [0.04, 0.1, 0.1, 0.2, 0.2, 0.2, 0.2],
+            "max_items": [9, 9, 9, 9, 9, 9, 9],
+            "health_potion_frequency": [0.9, 0.7, 0.6, 0.5, 0.4, 0.4, 0.4],
+            "shield_frequency":        [0.03, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1],
+            "sword_frequency":         [0.03, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1],
+            "bonus_potion_frequency":  [0.04, 0.2, 0.2, 0.3, 0.4, 0.4, 0.4],
         }
     }
 
