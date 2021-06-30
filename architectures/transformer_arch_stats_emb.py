@@ -96,7 +96,7 @@ def network_spec(states, baseline=False):
 
     health_potion = states[6]
     health_potion = embedding(health_potion, indices=2, size=stats_embedding_size)
-    health_potion= tf.reshape(health_potion, [-1, stats_embedding_size])
+    health_potion = tf.reshape(health_potion, [-1, stats_embedding_size])
 
     bonus_potion = states[7]
     bonus_potion = embedding(bonus_potion, indices=2, size=stats_embedding_size)
@@ -104,7 +104,7 @@ def network_spec(states, baseline=False):
 
     active_bonus_potion = states[8]
     active_bonus_potion = embedding(active_bonus_potion, indices=2, size=stats_embedding_size)
-    active_bonus_potion= tf.reshape(active_bonus_potion, [-1, stats_embedding_size])
+    active_bonus_potion = tf.reshape(active_bonus_potion, [-1, stats_embedding_size])
 
     agent_HP = states[9]
     agent_HP = embedding(agent_HP, indices=20, size=stats_embedding_size)

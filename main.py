@@ -106,7 +106,7 @@ if __name__ == "__main__":
     }
 
     # Total episode of training
-    total_episode = 400100
+    total_episode = 800100
     # Units of training (episodes or timesteps)
     frequency_mode = 'episodes'
     # Frequency of training (in episode)
