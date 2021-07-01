@@ -522,6 +522,7 @@ class PPO:
                 else:
                     sampled_action, alpha, beta, internal = self.sess.run([self.action, self.alpha, self.beta, self.rnn_state],
                                                                 feed_dict=feed_dict)
+
                 action = alpha / (alpha + beta)
                 action = self.action_min_value + (
                                 self.action_max_value - self.action_min_value) * action
@@ -701,7 +702,7 @@ class PPO:
         tf.compat.v1.disable_eager_execution()
         self.saver.save(self.sess, '{}/{}'.format(folder, name))
 
-        if False:
+        if True:
             graph_def = self.sess.graph.as_graph_def()
 
             # freeze_graph clear_devices option
@@ -709,11 +710,18 @@ class PPO:
                 node.device = ''
 
             graph_def = tf.compat.v1.graph_util.remove_training_nodes(input_graph=graph_def)
-            output_node_names = [
-                'ppo/actor/add',
-                'ppo/actor/ppo_actor_Categorical/action/Reshape_2',
-                'ppo/critic/Squeeze'
-            ]
+            if self.action_type == 'discrete':
+                output_node_names = [
+                    'ppo/actor/add',
+                    'ppo/actor/ppo_actor_Categorical/action/Reshape_2',
+                    'ppo/critic/Squeeze'
+                ]
+            elif self.action_type == 'continuous':
+                if self.distrbution_type == 'beta':
+                    output_node_names = [
+                        'ppo/actor/add',
+                        'ppo/actor/add_1',
+                    ]
 
             # implies tf.compat.v1.graph_util.extract_sub_graph
             graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
@@ -722,7 +730,7 @@ class PPO:
             )
             graph_path = tf.io.write_graph(
                 graph_or_graph_def=graph_def, logdir=folder,
-                name=(name + '.pb'), as_text=False
+                name=(name + '.bytes'), as_text=False
             )
 
         return
