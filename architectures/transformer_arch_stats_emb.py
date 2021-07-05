@@ -107,27 +107,27 @@ def network_spec(states, baseline=False):
     active_bonus_potion = tf.reshape(active_bonus_potion, [-1, stats_embedding_size])
 
     agent_HP = states[9]
-    agent_HP = embedding(agent_HP, indices=20, size=stats_embedding_size)
+    agent_HP = embedding(agent_HP, indices=21, size=stats_embedding_size)
     agent_HP = tf.reshape(agent_HP, [-1, stats_embedding_size])
 
     target_HP = states[10]
-    target_HP = embedding(target_HP, indices=20, size=stats_embedding_size)
+    target_HP = embedding(target_HP, indices=21, size=stats_embedding_size)
     target_HP = tf.reshape(target_HP, [-1, stats_embedding_size])
 
     agent_damage = states[11]
-    agent_damage = embedding(agent_damage, indices=19, size=stats_embedding_size)
+    agent_damage = embedding(agent_damage, indices=20, size=stats_embedding_size)
     agent_damage = tf.reshape(agent_damage, [-1, stats_embedding_size])
 
     target_damage = states[12]
-    target_damage = embedding(target_damage, indices=19, size=stats_embedding_size)
+    target_damage = embedding(target_damage, indices=20, size=stats_embedding_size)
     target_damage = tf.reshape(target_damage, [-1, stats_embedding_size])
 
     agent_def = states[13]
-    agent_def = embedding(agent_def, indices=14, size=stats_embedding_size)
+    agent_def = embedding(agent_def, indices=15, size=stats_embedding_size)
     agent_def = tf.reshape(agent_def, [-1, stats_embedding_size])
 
     target_def = states[14]
-    target_def = embedding(target_def, indices=14, size=stats_embedding_size)
+    target_def = embedding(target_def, indices=15, size=stats_embedding_size)
     target_def = tf.reshape(target_def, [-1, stats_embedding_size])
 
     stats = tf.concat([states[3], states[4], in_range, health_potion, bonus_potion, active_bonus_potion, agent_HP,

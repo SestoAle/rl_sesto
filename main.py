@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-mn', '--model-name', help="The name of the model", default='model')
 parser.add_argument('-gn', '--game-name', help="The name of the game", default=None)
 parser.add_argument('-wk', '--work-id', help="Work id for parallel training", default=0)
-parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=25000)
+parser.add_argument('-sf', '--save-frequency', help="How many episodes after save the model", default=10000)
 parser.add_argument('-lg', '--logging', help="How many episodes after logging statistics", default=100)
 parser.add_argument('-mt', '--max-timesteps', help="Max timestep per episode", default=40)
 parser.add_argument('-se', '--sampled-env', help="IRL", default=20)
@@ -93,15 +93,15 @@ if __name__ == "__main__":
             "agent_update_rate": [10, 10, 10, 10, 10, 10, 10],
             "target_update_rate": [10, 10, 10, 10, 10, 10, 10],
             "target_speed": [4, 5, 6, 6, 6, 6, 6],
-            "min_agent_HP": [1, 1, 5, 5, 5, 20, 20],
+            "min_agent_HP": [1, 1, 5, 5, 10, 15, 15],
             "max_agent_HP": [1, 5, 15, 20, 20, 20, 20],
-            "min_target_HP": [1, 1, 5, 5, 5, 20, 20],
+            "min_target_HP": [1, 1, 5, 5, 10, 15, 15],
             "max_target_HP": [5, 5, 10, 15, 20, 20, 20],
-            "max_items": [9, 9, 9, 9, 9, 9, 9],
-            "health_potion_frequency": [0.9, 0.7, 0.6, 0.5, 0.4, 0.4, 0.4],
+            "min_items": [9, 9, 8, 7, 6, 5, 5],
+            "health_potion_frequency": [0.9, 0.7, 0.6, 0.5, 0.5, 0.5, 0.5],
             "shield_frequency":        [0.03, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1],
             "sword_frequency":         [0.03, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1],
-            "bonus_potion_frequency":  [0.04, 0.2, 0.2, 0.3, 0.4, 0.4, 0.4],
+            "bonus_potion_frequency":  [0.04, 0.2, 0.2, 0.3, 0.3, 0.3, 0.3],
         }
     }
 
