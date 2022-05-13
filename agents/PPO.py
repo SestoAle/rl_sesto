@@ -22,7 +22,7 @@ class PPO:
                  name='ppo', memory=10, norm_reward=False, model_name='agent', frequency_mode='episodes',
 
                  # LSTM
-                 recurrent=True, recurrent_length=8, recurrent_baseline=False,
+                 recurrent=False, recurrent_length=4, recurrent_baseline=False,
 
                  **kwargs):
 
@@ -63,7 +63,7 @@ class PPO:
         self.recurrent = recurrent
         self.recurrent_baseline = recurrent_baseline
         self.recurrent_length = recurrent_length
-        self.recurrent_size = 256
+        self.recurrent_size = 64
 
         self.buffer = dict()
         self.clear_buffer()
@@ -88,10 +88,18 @@ class PPO:
                 self.p_network = self.linear(self.main_net, 256, name='p_fc1', activation=tf.nn.relu)
 
                 if not self.recurrent:
-                    self.p_network = self.linear(self.p_network, 256, name='p_fc2', activation=tf.nn.relu)
+                    self.p_network = self.linear(self.p_network, 64, name='p_fc2', activation=tf.nn.relu)
                 else:
                     # The last FC layer will be replaced by an LSTM layer.
                     # Recurrent network needs more variables
+
+                    # Typically, the previous action and reward are concatenated before lstm layer
+                    # I assume that these two placeholders are already in the input_spec()
+                    # In particular, I assume that they will be the *last two inputs* of the spec
+                    self.prev_action = self.inputs[-2]
+                    self.prev_reward = self.inputs[-1]
+
+                    self.p_network = tf.concat([self.p_network, self.prev_action, self.prev_reward], axis=1)
 
                     # Get batch size and number of feature of the previous layer
                     bs, feature = utils.shape_list(self.p_network)
@@ -151,6 +159,8 @@ class PPO:
                     self.action = self.dist.sample(name='action')
                 elif self.action_type == 'continuous':
                     self.action = self.dist.sample(name='action')
+                    if self.distrbution_type == 'beta':
+                         self.action = tf.clip_by_value(self.action, 0 + eps, 1 - eps)
 
                 self.log_prob = self.dist.log_prob(self.action)
                 # If there are more than 1 continuous actions, do the mean of log_probs
@@ -186,6 +196,7 @@ class PPO:
                         if self.distrbution_type == 'beta':
                             self.real_action = (self.eval_action - self.action_min_value) / (
                                     self.action_max_value - self.action_min_value)
+                            self.real_action = tf.clip_by_value(self.real_action, 0 + eps, 1 - eps)
 
                         # Gaussian Distribution
                         elif self.distrbution_type == 'gaussian':
@@ -212,7 +223,7 @@ class PPO:
 
                 # Final p_layers
                 if not self.recurrent_baseline:
-                    self.v_network = self.linear(self.v_network, 256, name='v_fc1', activation=tf.nn.relu)
+                    self.v_network = self.linear(self.v_network, 128, name='v_fc1', activation=tf.nn.relu)
                 else:
                     # The last FC layer will be replaced by an LSTM layer.
                     # Recurrent network needs more variables
@@ -236,7 +247,7 @@ class PPO:
                     # Take only the last state of the sequence
                     self.v_network = self.v_rnn_state.h
 
-                self.v_network = self.linear(self.v_network, 256, name='v_fc2', activation=tf.nn.relu)
+                self.v_network = self.linear(self.v_network, 64, name='v_fc2', activation=tf.nn.relu)
 
                 # Value function
                 self.value = tf.squeeze(self.linear(self.v_network, 1))
@@ -385,7 +396,7 @@ class PPO:
                 v_loss, step = self.sess.run([self.mse_loss, self.v_step], feed_dict=feed_dict)
 
             v_losses.append(v_loss)
-
+        # print(v_losses)
         # Compute GAE for rewards. If lambda == 1, they are discounted rewards
         # Compute values for each state
 
@@ -463,7 +474,7 @@ class PPO:
                 feed_dict[self.recurrent_train_length] = self.recurrent_length
                 loss, step = self.sess.run([self.total_loss, self.p_step], feed_dict=feed_dict)
             losses.append(loss)
-
+        # print(losses)
         return np.mean(losses)
 
     # Eval sampling the action (done by the net)
@@ -472,7 +483,6 @@ class PPO:
         feed_dict = self.create_state_feed_dict(state)
 
         action, logprob, probs = self.sess.run([self.action, self.log_prob, self.probs], feed_dict=feed_dict)
-
         return action, logprob, probs
 
     # Eval sampling the action, but with recurrent: it needs the internal hidden state
@@ -494,22 +504,34 @@ class PPO:
         return action, logprob, probs, internal, v_internal
 
     # Eval with argmax
-    def eval_max(self, state):
+    def eval_max(self, state, internal=None):
 
         state = self.obs_to_state(state)
         feed_dict = self.create_state_feed_dict(state)
-
+        # Pass the internal state
+        if internal != None:
+            feed_dict[self.state_in] = internal
+            feed_dict[self.recurrent_train_length] = 1
+            feed_dict[self.sequence_lengths] = [1]
 
         if self.action_type == 'continuous':
             if self.distrbution_type == 'beta':
                 # Return mean as deterministic action
-                beta, alpha = self.sess.run([self.beta, self.alpha], feed_dict=feed_dict)
-                action = beta / (alpha + beta)
+                if internal == None:
+                    sampled_action, alpha, beta = self.sess.run([self.action, self.alpha, self.beta], feed_dict=feed_dict)
+                else:
+                    sampled_action, alpha, beta, internal = self.sess.run([self.action, self.alpha, self.beta, self.rnn_state],
+                                                                feed_dict=feed_dict)
+
+                action = alpha / (alpha + beta)
                 action = self.action_min_value + (
                                 self.action_max_value - self.action_min_value) * action
             else:
                 # Return mean as deterministic action
-                action = self.sess.run([self.mean], feed_dict=feed_dict)
+                if internal == None:
+                    action = self.sess.run([self.mean], feed_dict=feed_dict)
+                else:
+                    action, internal = self.sess.run([self.mean, self.rnn_state], feed_dict=feed_dict)
                 action = tf.tanh(action)
                 one = tf.constant(value=1.0, dtype=tf.float32)
                 half = tf.constant(value=0.5, dtype=tf.float32)
@@ -518,10 +540,16 @@ class PPO:
                 action = min_value + (max_value - min_value) * half * (action + one)
 
         else:
-            probs = self.sess.run([self.probs], feed_dict=feed_dict)
+            if internal == None:
+                probs = self.sess.run([self.probs], feed_dict=feed_dict)
+            else:
+                probs, internal = self.sess.run([self.probs, self.rnn_state], feed_dict=feed_dict)
             action = np.argmax(probs)
+        if internal == None:
+            return action
+        else:
+            return action, internal
 
-        return action
 
     # Eval with a given action
     def eval_action(self, states, actions):
@@ -682,11 +710,18 @@ class PPO:
                 node.device = ''
 
             graph_def = tf.compat.v1.graph_util.remove_training_nodes(input_graph=graph_def)
-            output_node_names = [
-                'ppo/actor/add',
-                'ppo/actor/ppo_actor_Categorical/action/Reshape_2',
-                'ppo/critic/Squeeze'
-            ]
+            if self.action_type == 'discrete':
+                output_node_names = [
+                    'ppo/actor/add',
+                    'ppo/actor/ppo_actor_Categorical/action/Reshape_2',
+                    'ppo/critic/Squeeze'
+                ]
+            elif self.action_type == 'continuous':
+                if self.distrbution_type == 'beta':
+                    output_node_names = [
+                        'ppo/actor/add',
+                        'ppo/actor/add_1',
+                    ]
 
             # implies tf.compat.v1.graph_util.extract_sub_graph
             graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
@@ -695,7 +730,7 @@ class PPO:
             )
             graph_path = tf.io.write_graph(
                 graph_or_graph_def=graph_def, logdir=folder,
-                name=(name + '.pb'), as_text=False
+                name=(name + '.bytes'), as_text=False
             )
 
         return

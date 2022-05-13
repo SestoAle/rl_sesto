@@ -10,7 +10,7 @@ def linear(inp, inner_size, name='linear', bias=True, activation=None, init=None
         return lin
 
 def transformer(input, n_head, hidden_size, mask_value=None, mlp_layer=1, pooling='None',
-                    residual=True, with_embeddings=False, with_ffn=False, post_norm=False,
+                    residual=True, with_embeddings=False, with_ffn=False, post_norm=False, mask=None,
                     pre_norm=False, name='transformer', reuse=False):
 
     with tf.compat.v1.variable_scope(name, reuse=reuse):
@@ -66,9 +66,10 @@ def transformer(input, n_head, hidden_size, mask_value=None, mlp_layer=1, poolin
         input = input[:, tf.newaxis, :, :]
 
         bs, T, NE, features = shape_list(input)
-        mask = None
-        if mask_value != None:
-            mask = create_mask(input, mask_value)
+
+        if mask != None or mask_value != None:
+            if mask == None:
+                mask = create_mask(input, mask_value)
             assert np.all(np.array(mask.get_shape().as_list()) == np.array(input.get_shape().as_list()[:3])), \
                 f"Mask and input should have the same first 3 dimensions. {shape_list(mask)} -- {shape_list(input)}"
             mask = tf.expand_dims(mask, -2)  # (BS, T, 1, NE)
@@ -156,3 +157,13 @@ def embedding(input, indices, size, name='embs'):
             dtype=tf.float32, shape=shape
         )
         return tf.nn.tanh(tf.compat.v1.nn.embedding_lookup(params=W, ids=input, max_norm=None))
+
+def create_mask(input, value):
+    '''
+        Create mask from the input. If the first element is 99, then mask it.
+        The mask must be 1 for the input and 0 for the
+    '''
+    # x = bs, NE, feature
+    input = input[:, tf.newaxis, :, :]
+    mask = 1 - tf.cast(tf.equal(input[:,:,:,0], value), tf.float32)
+    return mask
